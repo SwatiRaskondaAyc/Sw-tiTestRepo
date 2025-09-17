@@ -2864,7 +2864,7 @@ const Navbar = () => {
           className={`fixed inset-0 top-16 z-40 bg-white dark:bg-gray-800 lg:hidden transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
             }`}
         >
-          <div className="p-4 overflow-y-auto h-full">
+          <div className="p-4 overflow-y-auto h-full z-40 ">
             <div className="mb-4">
               <form onSubmit={handleSearch} className="relative">
                 <div className="relative flex items-center">
