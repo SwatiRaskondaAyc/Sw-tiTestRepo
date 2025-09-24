@@ -124,3 +124,25 @@ body {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+
+
+
+/* Ignore system/browser dark mode */
+:root {
+  color-scheme: light;
+  /* tells browser: use light scrollbars, form controls, etc */
+}
+
+html {
+  background: #fff;
+  color: #000;
+}
+
+/* Optional: if you already have dark styles tied to prefers-color-scheme, override them */
+@media (prefers-color-scheme: dark) {
+  html {
+    background: #fff !important;
+    color: #000 !important;
+  }
+}

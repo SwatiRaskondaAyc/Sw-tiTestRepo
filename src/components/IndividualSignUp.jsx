@@ -1816,11 +1816,549 @@
 
 //MAIN CODE BEFORE PROMOCODE
 
+// import React, { useEffect, useState } from 'react';
+// import { useForm } from 'react-hook-form';
+// import { Link, useNavigate } from 'react-router-dom';
+// import toast from 'react-hot-toast';
+// import { FaIdCard, FaUser, FaEnvelope, FaPhone, FaLock, FaGlobe, FaMapMarkerAlt, FaArrowRight, FaChevronDown, FaUserTie, FaCheckCircle, FaMinusCircle, FaPlusCircle, FaVenusMars, FaCalendarAlt, FaEye, FaEyeSlash, FaGift } from 'react-icons/fa';
+// import { IoFlagSharp } from 'react-icons/io5';
+// import Login from './Login';
+// import Navbar from './Navbar';
+
+// const IndividualSignUp = () => {
+//   const [showMoreDetails, setShowMoreDetails] = useState(false);
+//   const [verifiedEmail, setVerifiedEmail] = useState('');
+//   const [showPassword, setShowPassword] = useState(false);
+//   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+//   const navigate = useNavigate();
+//   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({ mode: "onChange" });
+//   const password = watch("password");
+//   const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
+
+//   useEffect(() => {
+//     const storedEmail = localStorage.getItem("verifiedEmail");
+//     if (storedEmail) {
+//       setVerifiedEmail(storedEmail);
+//       setValue("email", storedEmail);
+//     }
+
+//     const savedData = JSON.parse(localStorage.getItem("individualSignUpData"));
+//     if (savedData) {
+//       Object.keys(savedData).forEach((key) => {
+//         setValue(key, savedData[key]);
+//       });
+//       if (savedData.gender || savedData.adharcard || savedData.pancard || savedData.address || savedData.dateofbirth) {
+//         setShowMoreDetails(true);
+//       }
+//     }
+//   }, [setValue]);
+
+//   const onSubmit = async (data) => {
+//     const payload = {
+//       fullname: data.fullname,
+//       email: verifiedEmail || data.email,
+//       password: data.password,
+//       countryCode: data.countryCode,
+//       mobileNum: data.mobileNum,
+//       userType: data.userType,
+//       promoCode: data.promoCode || null, // <-- Optional promo code added here
+//       ...(showMoreDetails && {
+//         gender: data.gender,
+//         adharcard: data.adharcard,
+//         pancard: data.pancard,
+//         address: data.address,
+//         dateofbirth: data.dateofbirth,
+//         terms: data.terms,
+//       }),
+//     };
+
+//     try {
+//       const response = await fetch(`${API_BASE}/auth/individual/register`, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify(payload),
+//       });
+
+//       if (response.ok) {
+//         localStorage.setItem("individualSignUpData", JSON.stringify(payload));
+//         toast.success("Individual Signup Successful");
+//         localStorage.removeItem("verifiedEmail");
+//         navigate("/");
+//       } else {
+//         throw new Error(await response.text());
+//       }
+//     } catch (error) {
+//       toast.error("Failed to Signup. Please try again.");
+//     }
+//   };
+
+//   const today = new Date().toISOString().split("T")[0];
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col transition-colors duration-300">
+//       <Navbar />
+//       <div className="flex-grow flex items-center justify-center p-4">
+//         <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transition-all duration-300 hover:shadow-2xl">
+//           <div className="text-center mb-6">
+//             <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2 relative inline-block">
+//               <span className="relative z-10">Individual Sign Up</span>
+//               <span className="absolute -bottom-1 left-0 w-full h-1 bg-sky-200 dark:bg-sky-700 rounded-full z-0"></span>
+//             </h1>
+//             <span className="inline-flex items-center px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-sm font-medium animate-pulse">
+//               New User
+//             </span>
+//           </div>
+
+//           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+//             <div className="space-y-4">
+//               {/* Full Name */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                   <span className="text-red-500">*</span> Full Name
+//                 </label>
+//                 <div className="relative group">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <FaUser className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                   </div>
+//                   <input
+//                     type="text"
+//                     className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                     placeholder="Enter Full Name"
+//                     {...register("fullname", { required: "Full name is required" })}
+//                   />
+//                   {errors.fullname && (
+//                     <span className="text-red-500 text-xs mt-1 block animate-fadeIn">{errors.fullname.message}</span>
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* Email */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                   <span className="text-red-500">*</span> Email
+//                 </label>
+//                 <div className="relative group">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <FaEnvelope className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                   </div>
+//                   <input
+//                     type="email"
+//                     className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400 bg-gray-50 dark:bg-gray-600"
+//                     placeholder="Enter Email"
+//                     {...register("email", { required: "Email is required" })}
+//                     value={verifiedEmail || ''}
+//                     readOnly={!!verifiedEmail}
+//                   />
+//                   {verifiedEmail && (
+//                     <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+//                       <FaCheckCircle className="text-green-500" />
+//                     </div>
+//                   )}
+//                   {errors.email && (
+//                     <span className="text-red-500 text-xs mt-1 block animate-fadeIn">{errors.email.message}</span>
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* Password */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                   <span className="text-red-500">*</span> Password
+//                 </label>
+//                 <div className="relative group">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <FaLock className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                   </div>
+//                   <input
+//                     type={showPassword ? "text" : "password"}
+//                     className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                     placeholder="Enter Password"
+//                     onPaste={(e) => e.preventDefault()}
+//                     onCopy={(e) => e.preventDefault()}
+//                     {...register("password", {
+//                       required: "Password is required",
+//                       pattern: {
+//                         value: /^[A-Z](?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+//                         message: "Must start with a capital, include a number & special character, min 9 chars"
+//                       }
+//                     })}
+//                   />
+//                   <button
+//                     type="button"
+//                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+//                     onClick={() => setShowPassword(!showPassword)}
+//                   >
+//                     {showPassword ? <FaEyeSlash /> : <FaEye />}
+//                   </button>
+//                   {errors.password && (
+//                     <span className="text-red-500 text-xs mt-1 block animate-fadeIn">{errors.password.message}</span>
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* Confirm Password */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                   <span className="text-red-500">*</span> Confirm Password
+//                 </label>
+//                 <div className="relative group">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <FaLock className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                   </div>
+//                   <input
+//                     type={showConfirmPassword ? "text" : "password"}
+//                     className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                     placeholder="Confirm Password"
+//                     onPaste={(e) => e.preventDefault()}
+//                     onCopy={(e) => e.preventDefault()}
+//                     {...register("confirmpassword", {
+//                       required: "Confirm password is required",
+//                       validate: (value) => value === password || "Passwords must match"
+//                     })}
+//                   />
+//                   <button
+//                     type="button"
+//                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+//                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+//                   >
+//                     {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+//                   </button>
+//                   {errors.confirmpassword && (
+//                     <span className="text-red-500 text-xs mt-1 block animate-fadeIn">{errors.confirmpassword.message}</span>
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* Country Code */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                   <span className="text-red-500">*</span> Country
+//                 </label>
+//                 <div className="relative group">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <FaGlobe className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                   </div>
+//                   <select
+//                     className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400 appearance-none"
+//                     {...register("countryCode", { required: "Country is required" })}
+//                   >
+//                     <option value="" disabled selected>Select Country</option>
+//                     <option value="+91">India (+91)</option>
+//                     <option value="+93">Afghanistan (+93)</option>
+//                     <option value="+358">Aland Islands (+358)</option>
+//                     <option value="+82">Korea (+82)</option>
+//                   </select>
+//                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+//                     <FaChevronDown className="text-gray-400 text-xs" />
+//                   </div>
+//                   {errors.countryCode && (
+//                     <span className="text-red-500 text-xs mt-1 block animate-fadeIn">{errors.countryCode.message}</span>
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* User Type */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                   <span className="text-red-500">*</span> User Type
+//                 </label>
+//                 <div className="relative group">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <FaUserTie className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                   </div>
+//                   <select
+//                     {...register("userType", { required: "User type is required" })}
+//                     className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400 appearance-none"
+//                   >
+//                     <option value="" disabled selected>Select User Type</option>
+//                     <option value="Salaried">Salaried</option>
+//                     <option value="Housewife">Housewife</option>
+//                   </select>
+//                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+//                     <FaChevronDown className="text-gray-400 text-xs" />
+//                   </div>
+//                   {errors.userType && (
+//                     <span className="text-red-500 text-xs mt-1 block animate-fadeIn">{errors.userType.message}</span>
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* Contact Number */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                   <span className="text-red-500">*</span> Contact Number
+//                 </label>
+//                 <div className="relative group">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <FaPhone className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                   </div>
+//                   <input
+//                     type="text"
+//                     className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                     placeholder="Enter 10-digit Number"
+//                     maxLength={10}
+//                     {...register("mobileNum", {
+//                       required: "Contact number is required",
+//                       pattern: {
+//                         value: /^[0-9]{10}$/,
+//                         message: "Contact number must be exactly 10 digits"
+//                       }
+//                     })}
+//                   />
+//                   {errors.mobileNum && (
+//                     <span className="text-red-500 text-xs mt-1 block animate-fadeIn">{errors.mobileNum.message}</span>
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* NEW: Promo Code (Optional) */}
+//               <div>
+//                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                   Promo Code (Optional)
+//                 </label>
+//                 <div className="relative group">
+//                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                     <FaGift className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                   </div>
+//                   <input
+//                     type="text"
+//                     className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                     placeholder="Enter Promo Code (if any)"
+//                     {...register("promoCode")}
+//                   />
+//                 </div>
+//               </div>
+
+//                     {/* Password Requirements */}
+//               <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded-lg border border-sky-100 dark:border-sky-800/50">
+//                 <p className="font-medium text-sky-700 dark:text-sky-300 mb-2">Password must:</p>
+//                 <ul className="grid grid-cols-2 gap-1 text-sm text-sky-600 dark:text-sky-400">
+//                   <li className="flex items-center">
+//                     <FaCheckCircle className="mr-1 text-xs" /> At least 9 characters
+//                   </li>
+//                   <li className="flex items-center">
+//                     <FaCheckCircle className="mr-1 text-xs" /> Start with uppercase
+//                   </li>
+//                   <li className="flex items-center">
+//                     <FaCheckCircle className="mr-1 text-xs" /> Include lowercase
+//                   </li>
+//                   <li className="flex items-center">
+//                     <FaCheckCircle className="mr-1 text-xs" /> Include number
+//                   </li>
+//                   <li className="flex items-center col-span-2">
+//                     <FaCheckCircle className="mr-1 text-xs" /> Include special character
+//                   </li>
+//                 </ul>
+//               </div>
+//             </div>
+
+//             {/* Additional Details Button */}
+//             <div className="flex justify-center">
+//               <button
+//                 type="button"
+//                 onClick={() => setShowMoreDetails(prev => !prev)}
+//                 className="flex items-center text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300 font-medium transition-colors"
+//               >
+//                 {showMoreDetails ? (
+//                   <>
+//                     <FaMinusCircle className="mr-2" /> Hide Additional Details
+//                   </>
+//                 ) : (
+//                   <>
+//                     <FaPlusCircle className="mr-2" /> Add More Details
+//                   </>
+//                 )}
+//               </button>
+//             </div>
+
+//             {/* Additional Fields */}
+//             {showMoreDetails && (
+//               <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-fadeIn">
+//                 {/* Gender */}
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                     Gender
+//                   </label>
+//                   <div className="relative group">
+//                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                       <FaVenusMars className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                     </div>
+//                     <input
+//                       type="text"
+//                       className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                       placeholder="Enter Gender"
+//                       {...register("gender")}
+//                     />
+//                   </div>
+//                 </div>
+
+//                 {/* Aadhar Card */}
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                     Aadhar Card
+//                   </label>
+//                   <div className="relative group">
+//                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                       <FaIdCard className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                     </div>
+//                     <input
+//                       type="text"
+//                       className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                       placeholder="Enter Aadhar Card Number"
+//                       {...register("adharcard")}
+//                     />
+//                   </div>
+//                 </div>
+
+//                 {/* PAN Card */}
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                     PAN Card
+//                   </label>
+//                   <div className="relative group">
+//                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                       <FaIdCard className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                     </div>
+//                     <input
+//                       type="text"
+//                       className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                       placeholder="Enter PAN Card Number"
+//                       {...register("pancard")}
+//                     />
+//                   </div>
+//                 </div>
+
+//                 {/* Address */}
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                     Address
+//                   </label>
+//                   <div className="relative group">
+//                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                       <FaMapMarkerAlt className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                     </div>
+//                     <input
+//                       type="text"
+//                       className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                       placeholder="Enter Address"
+//                       {...register("address")}
+//                     />
+//                   </div>
+//                 </div>
+
+//                 {/* Date of Birth */}
+//                 <div>
+//                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+//                     Date of Birth
+//                   </label>
+//                   <div className="relative group">
+//                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+//                       <FaCalendarAlt className="text-gray-400 group-hover:text-sky-500 transition-colors" />
+//                     </div>
+//                     <input
+//                       type="date"
+//                       className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 dark:bg-gray-700 dark:text-white transition-all duration-200 group-hover:border-sky-400"
+//                       max={today}
+//                       {...register("dateofbirth", {
+//                         required: showMoreDetails ? "Date of birth is required" : false,
+//                         validate: (value) => {
+//                           if (!value && showMoreDetails) return "Date of birth is required";
+//                           const selectedDate = new Date(value);
+//                           const currentDate = new Date();
+//                           return selectedDate <= currentDate || "Date of birth cannot be in the future";
+//                         }
+//                       })}
+//                     />
+//                     {errors.dateofbirth && (
+//                       <span className="text-red-500 text-xs mt-1 block animate-fadeIn">{errors.dateofbirth.message}</span>
+//                     )}
+//                   </div>
+//                 </div>
+
+//                 {/* Terms and Conditions */}
+//                 <div className="flex items-start space-x-3 pt-2">
+//                   <div className="flex items-center h-5">
+//                     <input
+//                       type="checkbox"
+//                       className="h-4 w-4 text-sky-600 focus:ring-sky-500 border-gray-300 rounded transition-colors"
+//                       {...register("terms", { required: showMoreDetails ? "You must agree to the terms" : false })}
+//                     />
+//                   </div>
+//                   <label className="text-sm text-gray-700 dark:text-gray-300">
+//                     I agree to the <a href="#" className="text-sky-600 dark:text-sky-400 hover:underline">Terms and Conditions</a>
+//                   </label>
+//                   {errors.terms && (
+//                     <span className="text-red-500 text-xs block animate-fadeIn">{errors.terms.message}</span>
+//                   )}
+//                 </div>
+//               </div>
+//             )}
+
+//             {/* Submit Button */}
+//             <div className="pt-4">
+//               <button
+//                 type="submit"
+//                 className="w-full bg-gradient-to-r from-sky-500 to-indigo-500 text-white py-3 rounded-lg hover:from-sky-600 hover:to-indigo-600 transition-all duration-300 font-medium shadow-md hover:shadow-lg flex items-center justify-center"
+//               >
+//                 <span>Sign Up</span>
+//                 <FaArrowRight className="ml-2" />
+//               </button>
+//             </div>
+
+//             {/* Divider
+//             <div className="relative">
+//               <div className="absolute inset-0 flex items-center">
+//                 <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+//               </div>
+//               <div className="relative flex justify-center">
+//                 <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 text-sm">or continue with</span>
+//               </div>
+//             </div>
+
+//             {/* Google Sign-In */}
+//             <div>
+//               <button
+//                 type="button"
+//                 onClick={() => toast.error("Sign in with Google functionality coming soon!")}
+//                 className="w-full bg-white text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium flex items-center justify-center space-x-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+//               >
+//                 <img src="/Google_logo.png" alt="Google Logo" className="w-5 h-5" />
+//                 <span>Sign in with Google</span>
+//               </button>
+//             </div>
+
+//             {/* Login Link 
+//             <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+//               Already have an account?{' '}
+//               <button
+//                 type="button"
+//                 className="text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300 font-medium hover:underline"
+//                 onClick={() => document.getElementById("my_modal_3").showModal()}
+//               >
+//                 Login
+//               </button>
+//               <Login />
+//             </div> */}
+//           </form>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default IndividualSignUp;
+
+//main code before distribution limit logic 
+
+
+
+
+
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { FaIdCard, FaUser, FaEnvelope, FaPhone, FaLock, FaGlobe, FaMapMarkerAlt, FaArrowRight, FaChevronDown, FaUserTie, FaCheckCircle, FaMinusCircle, FaPlusCircle, FaVenusMars, FaCalendarAlt, FaEye, FaEyeSlash, FaGift } from 'react-icons/fa';
+import { FaIdCard, FaUser, FaEnvelope, FaPhone, FaLock, FaGlobe, FaMapMarkerAlt, FaArrowRight, FaChevronDown, FaUserTie, FaCheckCircle, FaMinusCircle, FaPlusCircle, FaVenusMars, FaCalendarAlt, FaEye, FaEyeSlash, FaGift, FaExclamationTriangle } from 'react-icons/fa';
 import { IoFlagSharp } from 'react-icons/io5';
 import Login from './Login';
 import Navbar from './Navbar';
@@ -1854,6 +2392,12 @@ const IndividualSignUp = () => {
   }, [setValue]);
 
   const onSubmit = async (data) => {
+    // Validate password match before making API call
+    if (data.password !== data.confirmpassword) {
+      toast.error("Passwords do not match! 🔒", { duration: 5000, icon: <FaExclamationTriangle className="text-red-500" /> });
+      return;
+    }
+
     const payload = {
       fullname: data.fullname,
       email: verifiedEmail || data.email,
@@ -1861,7 +2405,7 @@ const IndividualSignUp = () => {
       countryCode: data.countryCode,
       mobileNum: data.mobileNum,
       userType: data.userType,
-      promoCode: data.promoCode || null, // <-- Optional promo code added here
+      promoCode: data.promoCode || null,
       ...(showMoreDetails && {
         gender: data.gender,
         adharcard: data.adharcard,
@@ -1879,16 +2423,43 @@ const IndividualSignUp = () => {
         body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
+      const message = await response.text();
+
+      // Check the content of the message to determine success or error
+      if (message.toLowerCase().includes("successfully")) {
         localStorage.setItem("individualSignUpData", JSON.stringify(payload));
-        toast.success("Individual Signup Successful");
+        toast.success("Individual Signup Successful! 🎉", { duration: 4000 });
         localStorage.removeItem("verifiedEmail");
         navigate("/");
       } else {
-        throw new Error(await response.text());
+        // Handle specific promo code errors with clear alerts
+        if (message.includes("Invalid promo code")) {
+          toast.error("Invalid promo code! ❌ Please enter a valid promo code.", { 
+            duration: 5000,
+            icon: <FaExclamationTriangle className="text-red-500" />
+          });
+        } else if (message.includes("Promo code is not valid or has expired")) {
+          toast.error("Promo code has expired! ⏰ Please use an active promo code.", { 
+            duration: 5000,
+            icon: <FaExclamationTriangle className="text-red-500" />
+          });
+        } else if (message.includes("Promo code limit has been reached")) {
+          toast.error("Promo code limit reached! 🚫 Maximum uses exceeded. Try another code.", { 
+            duration: 5000,
+            icon: <FaExclamationTriangle className="text-red-500" />
+          });
+        } else {
+          toast.error(message || "Signup failed! 😔 Please check your details and try again.", { 
+            duration: 5000,
+            icon: <FaExclamationTriangle className="text-red-500" />
+          });
+        }
       }
     } catch (error) {
-      toast.error("Failed to Signup. Please try again.");
+      toast.error("Failed to sign up due to a network error. ⚠️ Please try again later.", { 
+        duration: 5000,
+        icon: <FaExclamationTriangle className="text-red-500" />
+      });
     }
   };
 
@@ -2111,10 +2682,10 @@ const IndividualSignUp = () => {
                 </div>
               </div>
 
-              {/* NEW: Promo Code (Optional) */}
+              {/* Promo Code (Optional) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Promo Code (Optional)
+                  Promo Code (Optional) <FaGift className="inline ml-1 text-sky-500" />
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -2126,10 +2697,11 @@ const IndividualSignUp = () => {
                     placeholder="Enter Promo Code (if any)"
                     {...register("promoCode")}
                   />
+                  <p className="text-xs text-gray-500 mt-1">Enter a valid promo code for special benefits!</p>
                 </div>
               </div>
 
-                    {/* Password Requirements */}
+              {/* Password Requirements */}
               <div className="p-4 bg-sky-50 dark:bg-sky-900/20 rounded-lg border border-sky-100 dark:border-sky-800/50">
                 <p className="font-medium text-sky-700 dark:text-sky-300 mb-2">Password must:</p>
                 <ul className="grid grid-cols-2 gap-1 text-sm text-sky-600 dark:text-sky-400">
@@ -2304,18 +2876,6 @@ const IndividualSignUp = () => {
                 <FaArrowRight className="ml-2" />
               </button>
             </div>
-
-            {/* Divider
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-              </div>
-              <div className="relative flex justify-center">
-                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 text-sm">or continue with</span>
-              </div>
-            </div>
-
-            {/* Google Sign-In */}
             <div>
               <button
                 type="button"
@@ -2326,19 +2886,6 @@ const IndividualSignUp = () => {
                 <span>Sign in with Google</span>
               </button>
             </div>
-
-            {/* Login Link 
-            <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-              Already have an account?{' '}
-              <button
-                type="button"
-                className="text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300 font-medium hover:underline"
-                onClick={() => document.getElementById("my_modal_3").showModal()}
-              >
-                Login
-              </button>
-              <Login />
-            </div> */}
           </form>
         </div>
       </div>

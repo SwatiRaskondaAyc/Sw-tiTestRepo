@@ -46,7 +46,7 @@
 //   "Industry Bubble":IndustryBubble,
 //   "Technical Plot":TechnicalPlot,
 //   "OpenClose":OpenClose
- 
+
 //   // Add more components here
 // };
 
@@ -113,7 +113,7 @@
 //   "Industry Bubble": IndustryBubble,
 //   "Candle stick": TechnicalPlot,
 //   "OpenClose": OpenClose,
- 
+
 // };
 
 
@@ -184,7 +184,7 @@ import CandlePatternPlot from '../EquityHub/CandlePattern';
 export const equityHubMap = {
   "CandleSpread ": CandleSpread,
   "LastTraded": LastTraded,
-  "Avg Box Plots": AvgBoxPlots,
+  "AvgBoxPlots": AvgBoxPlots,
   "Worms Plots": WormsPlots,
   "MacdPlot": MacdPlot,
   "SensexStockCorrBar": SensexStockCorrBar,
@@ -196,28 +196,28 @@ export const equityHubMap = {
   "SensexCalculator": SensexCalculator,
   "IndustryBubble": IndustryBubble,
   "CandlePatternPlot": CandlePatternPlot,
-  
+
 };
 
 
 export const portfolioMap = {
 
-  "LatestInsights":LatestInsights,
-  "ShortNseTable":ShortNseTable,
-  "PortfolioResults":PortfolioResults,
-  "PortfMatrics":PortfMatrics,
-  "TopTenScript":TopTenScript,
-  "ShareholdingPlot":ShareholdingPlot,
-  "PriceAcquisitionPlot":PriceAcquisitionPlot,
-  "StockDepAmtOverTime":StockDepAmtOverTime,
-  "CombinedBox":CombinedBox,
-  "CreatePNL":CreatePNL,
-  "SwotPlot":SwotPlot,
-  "ComBubChart":ComBubChart,
-  "InvAmtPlot":InvAmtPlot,
-  "BestTradePlot":BestTradePlot,
-  "ClassifyStockRisk":ClassifyStockRisk,
-  "EPSQuarterlyChart":EPSQuarterlyChart
+  "LatestInsights": LatestInsights,
+  "ShortNseTable": ShortNseTable,
+  "PortfolioResults": PortfolioResults,
+  "PortfMatrics": PortfMatrics,
+  "TopTenScript": TopTenScript,
+  "ShareholdingPlot": ShareholdingPlot,
+  "PriceAcquisitionPlot": PriceAcquisitionPlot,
+  "StockDepAmtOverTime": StockDepAmtOverTime,
+  "CombinedBox": CombinedBox,
+  "CreatePNL": CreatePNL,
+  "SwotPlot": SwotPlot,
+  "ComBubChart": ComBubChart,
+  "InvAmtPlot": InvAmtPlot,
+  "BestTradePlot": BestTradePlot,
+  "ClassifyStockRisk": ClassifyStockRisk,
+  "EPSQuarterlyChart": EPSQuarterlyChart
 };
 
 

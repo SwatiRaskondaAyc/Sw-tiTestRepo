@@ -502,7 +502,7 @@
 //           Dashboard
 //         </Link>
 //       </li>
-      
+
 //       <li>
 //         <Link
 //           to="/about"
@@ -903,7 +903,7 @@
 //                 Dashboard
 //               </Link>
 //             </li>
-           
+
 //             <li>
 //               <Link
 //                 to="/about"
@@ -1534,7 +1534,7 @@
 //           Dashboard
 //         </Link>
 //       </li>
-      
+
 //       <li>
 //         <Link
 //           to="/about"
@@ -1935,7 +1935,7 @@
 //                 Dashboard
 //               </Link>
 //             </li>
-           
+
 //             <li>
 //               <Link
 //                 to="/about"
@@ -2064,8 +2064,2189 @@
 // export default Navbar;
 
 
+// import React, { useEffect, useState, useRef } from "react";
+// import Login from "./Login";
+// import { logActivity, getProfilePicture } from "../services/api";
+// import { Link, useLocation, useNavigate } from "react-router-dom";
+// import { FaSun, FaMoon, FaTimes } from "react-icons/fa";
+// import { MdDelete, MdOutlineSettings } from "react-icons/md";
+// import { AiFillProfile } from "react-icons/ai";
+// import { BsQuestionCircle } from "react-icons/bs";
+// import Profile from "./Profile";
+// import UpdateIndividualProfile from "./UpdateIndividualProfile";
+// import UpdateCorporateProfile from "./UpdateCorporateProfile";
+// import Username from "./Username";
+// import ProfilePicture from "./ProfilePicture";
+// import profile from "../../public/profile.png";
+// import { CgLogIn, CgProfile } from "react-icons/cg";
+// import { HiOutlineLogout } from "react-icons/hi";
+// import toast from "react-hot-toast";
+// import { useAuth } from "./AuthContext";
+// import { Search } from "lucide-react";
+// import SearchList from "./EquityHub/SearchList";
+// import axios from "axios";
+// import { IoMdArrowDropdown, IoMdMenu } from "react-icons/io";
+// import QuizModal from "./QuizModal";
+// import JwtUtil from "../services/JwtUtil";
+
+// const Navbar = () => {
+//   const [isLoggedIn, setIsLoggedIn] = useState(false);
+//   const [profileImage, setProfileImage] = useState(null);
+//   const [sticky, setSticky] = useState(false);
+//   const [userType, setUserType] = useState(localStorage.getItem('userType') || 'individual');
+//   const [fullName, setFullName] = useState("");
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [results, setResults] = useState([]);
+//   const [error, setError] = useState(null);
+//   const [showQuizModal, setShowQuizModal] = useState(false);
+//   const [quizQuestions, setQuizQuestions] = useState([]);
+//   const [hasShownQuizPopup, setHasShownQuizPopup] = useState(false);
+//   const [showDeleteModal, setShowDeleteModal] = useState(false);
+//   const [showLoginModal, setShowLoginModal] = useState(false);
+//   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+//   const [isDisabled, setIsDisabled] = useState(true);
+//   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+//   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+//   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const { login, logout } = useAuth();
+
+//   const profileCollapseRef = useRef(null);
+//   const settingsCollapseRef = useRef(null);
+//   const quizCollapseRef = useRef(null);
+//   const mobileMenuRef = useRef(null);
+//   const searchRef = useRef(null);
+//   const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
+//   const CACHE_TTL = 60 * 60 * 1000;
+//   const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+//   const TOKEN_CHECK_INTERVAL = 60 * 1000;
+
+//   let inactivityTimer;
+
+//   // Close mobile menu when clicking outside
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+//         setIsMobileMenuOpen(false);
+//       }
+//       if (searchRef.current && !searchRef.current.contains(event.target)) {
+//         setResults([]);
+//         setError(null);
+//       }
+//     };
+
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => {
+//       document.removeEventListener("mousedown", handleClickOutside);
+//     };
+//   }, []);
+
+//   // Theme effect
+//   useEffect(() => {
+//     if (theme === 'dark') {
+//       document.documentElement.classList.add('dark');
+//     } else {
+//       document.documentElement.classList.remove('dark');
+//     }
+//     localStorage.setItem('theme', theme);
+//   }, [theme]);
+
+//   const toggleTheme = () => {
+//     setTheme(theme === 'dark' ? 'light' : 'dark');
+//   };
+
+//   const resetInactivityTimer = () => {
+//     if (inactivityTimer) clearTimeout(inactivityTimer);
+//     if (isLoggedIn) inactivityTimer = setTimeout(handleLogout, INACTIVITY_TIMEOUT);
+//   };
+
+//   const handleLogout = async () => {
+//     const token = localStorage.getItem('authToken');
+//     const email = JwtUtil.extractEmail(token);
+
+//     if (!email) {
+//       toast.error("Missing user email. Cannot logout.");
+//       localStorage.removeItem('authToken');
+//       localStorage.removeItem('userType');
+//       localStorage.removeItem('userEmail');
+//       localStorage.removeItem('hasSeenQuizModal');
+//       localStorage.removeItem('hasTakenQuiz');
+//       logout();
+//       navigate('/');
+//       setIsLoggedIn(false);
+//       setHasShownQuizPopup(false);
+//       setShowQuizModal(false);
+//       setProfileImage(profile);
+//       return;
+//     }
+
+//     try {
+//       await axios.post(
+//         `${API_BASE}/auth/logout`,
+//         { email },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             'Content-Type': 'application/json',
+//           },
+//         }
+//       );
+//       toast.success("Logout successful");
+//     } catch (error) {
+//       console.error(error.response?.data?.message || "Logout API failed");
+//     } finally {
+//       localStorage.removeItem('authToken');
+//       localStorage.removeItem('userType');
+//       localStorage.removeItem('userEmail');
+//       localStorage.removeItem('hasSeenQuizModal');
+//       localStorage.removeItem('hasTakenQuiz');
+//       logout();
+//       navigate('/');
+//       setIsLoggedIn(false);
+//       setHasShownQuizPopup(false);
+//       setShowQuizModal(false);
+//       setProfileImage(profile);
+//       setIsMobileMenuOpen(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     const checkTokenExpiration = () => {
+//       const token = localStorage.getItem('authToken');
+//       if (token && JwtUtil.isTokenExpired(token)) {
+//         toast.error("Session expired. Please log in again.");
+//         handleLogout();
+//       }
+//     };
+
+//     if (isLoggedIn) {
+//       checkTokenExpiration();
+//       const interval = setInterval(checkTokenExpiration, TOKEN_CHECK_INTERVAL);
+//       return () => clearInterval(interval);
+//     }
+//   }, [isLoggedIn]);
+
+//   useEffect(() => {
+//     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+//     const handleActivity = () => resetInactivityTimer();
+
+//     if (isLoggedIn) {
+//       resetInactivityTimer();
+//       events.forEach(event => window.addEventListener(event, handleActivity));
+//     }
+
+//     return () => {
+//       if (inactivityTimer) clearTimeout(inactivityTimer);
+//       events.forEach(event => window.removeEventListener(event, handleActivity));
+//     };
+//   }, [isLoggedIn]);
+
+//   useEffect(() => {
+//     const fetchQuestions = async () => {
+//       try {
+//         const res = await axios.get(`${API_BASE}/assessment/questions`);
+//         if (res.status === 200) setQuizQuestions(res.data);
+//       } catch (error) {
+//         console.error("Failed to fetch quiz questions", error);
+//         toast.error("Failed to load quiz questions");
+//       }
+//     };
+//     fetchQuestions();
+//   }, []);
+
+//   const handlePortfolioClick = (e) => {
+//     e.preventDefault();
+//     setIsPortfolioOpen(true);
+//     handleNavClick("Portfolio");
+//     navigate("/portDash");
+//   };
+
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (!event.target.closest("#portfolio-dropdown")) setIsPortfolioOpen(false);
+//     };
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => document.removeEventListener("mousedown", handleClickOutside);
+//   }, []);
+
+//   useEffect(() => {
+//     const handleScroll = () => setSticky(window.scrollY > 0);
+//     window.addEventListener("scroll", handleScroll);
+//     return () => window.removeEventListener("scroll", handleScroll);
+//   }, []);
+
+//   const fetchProfileImage = async () => {
+//     try {
+//       const url = await getProfilePicture();
+//       setProfileImage(url ? `${url}?t=${Date.now()}` : profile);
+//     } catch (error) {
+//       console.error("Failed to fetch profile picture:", error);
+//       setProfileImage(profile);
+//       toast.error("Failed to load profile picture");
+//     }
+//   };
+
+//   useEffect(() => {
+//     const storedUserType = localStorage.getItem("userType") || "individual";
+//     setUserType(storedUserType);
+
+//     const token = localStorage.getItem("authToken");
+//     const isCurrentlyLoggedIn = !!token && !JwtUtil.isTokenExpired(token);
+//     setIsLoggedIn(isCurrentlyLoggedIn);
+
+//     if (isCurrentlyLoggedIn) fetchProfileImage();
+//     else setProfileImage(profile);
+//   }, [isLoggedIn]);
+
+//   const fetchName = async () => {
+//     const token = localStorage.getItem('authToken');
+//     if (!token) return;
+
+//     const email = JwtUtil.extractEmail(token);
+//     if (!email) return;
+
+//     try {
+//       const url = userType === 'corporate' ? `/corporate/${email}` : `/Userprofile/${email}`;
+//       const response = await axios.get(`${API_BASE}${url}`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+
+//       const name = userType === 'corporate' ? response.data.employeeName : response.data.fullname || response.data.fullName;
+//       setFullName(name);
+//     } catch (error) {
+//       console.error('Failed to fetch user name:', error);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchName();
+
+//     const syncName = () => {
+//       setUserType(localStorage.getItem('userType') || 'individual');
+//       fetchName();
+//     };
+
+//     window.addEventListener('authChange', syncName);
+//     window.addEventListener('storage', syncName);
+
+//     return () => {
+//       window.removeEventListener('authChange', syncName);
+//       window.removeEventListener('storage', syncName);
+//     };
+//   }, []);
+
+//   useEffect(() => {
+//     const token = localStorage.getItem("authToken");
+//     const isCurrentlyLoggedIn = !!token && !JwtUtil.isTokenExpired(token);
+//     setIsLoggedIn(isCurrentlyLoggedIn);
+
+//     if (isCurrentlyLoggedIn && !localStorage.getItem("hasTakenQuiz")) {
+//       const hasSeenQuizModal = localStorage.getItem("hasSeenQuizModal") === "true";
+//       if (!hasShownQuizPopup && !hasSeenQuizModal) {
+//         const timer = setTimeout(() => {
+//           setShowQuizModal(true);
+//           setHasShownQuizPopup(true);
+//         }, 3000);
+//         return () => clearTimeout(timer);
+//       }
+//     }
+//   }, [isLoggedIn, hasShownQuizPopup]);
+
+//   const handleDeleteAccount = async () => {
+//     const apiUrl = userType === "corporate" ? `${API_BASE}/corporate/delete-account` : `${API_BASE}/Userprofile/delete-account`;
+
+//     try {
+//       await axios.delete(apiUrl, {
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+//           "Content-Type": "application/json",
+//         },
+//       });
+//       toast.success("Account deleted successfully");
+//       localStorage.removeItem("authToken");
+//       localStorage.removeItem("userType");
+//       localStorage.removeItem("hasSeenQuizModal");
+//       localStorage.removeItem("hasTakenQuiz");
+//       logout();
+//       navigate("/");
+//       setShowDeleteModal(false);
+//       setProfileImage(profile);
+//       setIsMobileMenuOpen(false);
+//     } catch (err) {
+//       toast.error(err.response?.data?.message || "Failed to delete account");
+//     }
+//   };
+
+//   const handleNavClick = async (label) => {
+//     await logActivity(`${label} tab clicked`);
+//     setIsMobileMenuOpen(false);
+//   };
+
+//   const isActive = (path) => location.pathname === path;
+
+//   const handleDashboardClick = (e) => {
+//     if (!isLoggedIn) {
+//       e.preventDefault();
+//       toast.error("Please login to access the Dashboard");
+//     } else {
+//       handleNavClick("Dashboard");
+//     }
+//   };
+
+//   const getCachedData = (key) => {
+//     const cached = localStorage.getItem(key);
+//     if (!cached) return null;
+//     try {
+//       const { data, timestamp } = JSON.parse(cached);
+//       if (Date.now() - timestamp > CACHE_TTL) {
+//         localStorage.removeItem(key);
+//         return null;
+//       }
+//       return data;
+//     } catch (err) {
+//       setError("Failed to parse cached data.");
+//       console.error("Cache parse error:", err);
+//       return null;
+//     }
+//   };
+
+//   const setCachedData = (key, data) => {
+//     try {
+//       localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+//     } catch (err) {
+//       setError("Failed to cache data.");
+//       console.error("Cache set error:", err);
+//     }
+//   };
+
+//   const fetchData = async (value) => {
+//     if (!value || value.length < 2) {
+//       setResults([]);
+//       setError(null);
+//       return;
+//     }
+
+//     const cacheKey = `search_${value.toLowerCase()}`;
+//     const cachedResults = getCachedData(cacheKey);
+//     if (cachedResults) {
+//       setResults(cachedResults);
+//       return;
+//     }
+
+//     try {
+//       const response = await axios.get(`${API_BASE}/stocks/test/suggest`, {
+//         params: { prefix: value },
+
+//       });
+//       const filteredResults = response.data.filter((symbol) =>
+//         symbol?.symbol?.toLowerCase().includes(value.toLowerCase())
+//       );
+//       if (filteredResults.length === 0) {
+//         setError("No matching stocks found.");
+//       } else {
+//         setResults(filteredResults);
+//         setCachedData(cacheKey, filteredResults);
+//         setError(null);
+//       }
+//     } catch (error) {
+//       setError(error.response?.data?.error || error.message || "Failed to fetch search results.");
+//       setResults([]);
+//     }
+//   };
+
+//   const handleSearch = (e) => {
+//     e.preventDefault();
+//     if (searchQuery.trim()) {
+//       navigate(`/equityhub?query=${encodeURIComponent(searchQuery)}`);
+//       setSearchQuery("");
+//       setResults([]);
+//       setError(null);
+//       setIsMobileMenuOpen(false);
+//     }
+//   };
+
+//   const handleSelectItem = (item) => {
+//     if (item && item.symbol) {
+//       setSearchQuery("");
+//       setResults([]);
+//       setError(null);
+//       navigate(`/equityhub?query=${encodeURIComponent(item.symbol)}`);
+//       setIsMobileMenuOpen(false);
+//     }
+//   };
+
+//   const handleClearSearch = () => {
+//     setSearchQuery("");
+//     setResults([]);
+//     setError(null);
+//   };
+
+//   const handleLoginClick = () => {
+//     setShowLoginModal(true);
+//     setIsMobileMenuOpen(false);
+//   };
+
+//   const handleCloseModal = () => setShowLoginModal(false);
+
+//   const handleLoginSuccess = () => {
+//     login();
+//     handleCloseModal();
+//     setIsLoggedIn(true);
+//     localStorage.removeItem("hasSeenQuizModal");
+//     localStorage.removeItem("hasTakenQuiz");
+//     setHasShownQuizPopup(false);
+//     fetchProfileImage();
+//   };
+
+//   const handleOpenQuiz = () => {
+//     setShowQuizModal(true);
+//     setIsMobileMenuOpen(false);
+//   };
+
+//   const handleDrawerToggle = (e) => {
+//     const isChecked = e.target.checked;
+//     setIsDrawerOpen(isChecked);
+//     if (isChecked) {
+//       if (profileCollapseRef.current) profileCollapseRef.current.checked = false;
+//       if (settingsCollapseRef.current) settingsCollapseRef.current.checked = false;
+//       if (quizCollapseRef.current) quizCollapseRef.current.checked = false;
+//     }
+//   };
+
+//   const toggleMobileMenu = () => {
+//     setIsMobileMenuOpen(!isMobileMenuOpen);
+//   };
+
+//   const navItems = (
+//     <ul className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-6">
+//       <li>
+//         <Link
+//           to="/"
+//           onClick={() => handleNavClick("Home")}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/") ? "text-primary-500 underline underline-offset-8 font-bold" : "text-gray-800 dark:text-white"} 
+//             hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Home
+//         </Link>
+//       </li>
+//       <li
+//         id="portfolio-dropdown"
+//         className="relative"
+//         onMouseEnter={() => setIsPortfolioOpen(true)}
+//         onMouseLeave={() => setIsPortfolioOpen(false)}
+//       >
+//         <span
+//           onClick={handlePortfolioClick}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out cursor-pointer 
+//             ${isActive("/portDash") ? "text-primary-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Portfolio
+//         </span>
+//         {isPortfolioOpen && (
+//           <ul
+//             className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-2 z-10 lg:mt-0 border border-gray-200 dark:border-gray-700"
+//             onMouseEnter={() => setIsPortfolioOpen(true)}
+//             onMouseLeave={() => setIsPortfolioOpen(false)}
+//           >
+//             <li>
+//               <Link
+//                 to="/portDash"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+//               >
+//                 Upload File
+//               </Link>
+//               <Link
+//                 to="/portDash/my-portfolio"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+//               >
+//                 Saved Portfolio
+//               </Link>
+//             </li>
+//             <li>
+//               <Link
+//                 to="/portDash/resculpt-portfolio"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+//               >
+//                 Recreate Portfolio
+//               </Link>
+//             </li>
+//             <li>
+//               <Link
+//                 to="/portDash/customize-portfolio"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+//               >
+//                 Create own Portfolio
+//               </Link>
+//             </li>
+//           </ul>
+//         )}
+//       </li>
+//       <li>
+//         <Link
+//           to="/equityhub"
+//           onClick={() => handleNavClick("Equity Hub")}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/equityhub") ? "text-primary-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Equity Insights
+//         </Link>
+//       </li>
+
+//       <li>
+//         <Link
+//           to="/dashboard"
+//           onClick={handleDashboardClick}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/dashboard") ? "text-primary-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Research Panel
+//         </Link>
+//       </li>
+//       <li>
+//         <Link
+//           to="/about"
+//           onClick={() => handleNavClick("About")}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/about") ? "text-primary-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           About
+//         </Link>
+//       </li>
+//       <li className={isDisabled ? "opacity-50 pointer-events-none" : ""}>
+//         <Link
+//           to="/plan"
+//           onClick={(e) => {
+//             if (isDisabled) {
+//               e.preventDefault();
+//               return;
+//             }
+//             handleNavClick("Subscription");
+//           }}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive('/plan') ? 'text-primary-500 underline underline-offset-8' : 'text-gray-800 dark:text-white'} 
+//             hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//           data-tour="subscription-link"
+//         >
+//           Subscription
+//         </Link>
+//       </li>
+//     </ul>
+//   );
+
+//   return (
+//     <>
+//       <nav
+//         className={`fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 md:px-8 lg:px-10 py-3 transition-all duration-300 ${sticky
+//           ? "bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-md border-b border-gray-200 dark:border-gray-700"
+//           : "bg-transparent"
+//           }`}
+//       >
+//         <div className="max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-y-4">
+//           {/* Logo */}
+//           {/* <Link to="/" className="text-2xl font-bold text-primary-600 dark:text-white flex items-center">
+//             <span className="bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
+//               #CMDA
+//             </span>
+//             <span className="ml-1 text-xs bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded-full">
+//               BETA
+//             </span>
+//           </Link> */}
+
+//           {/* Desktop Navigation */}
+//           <div className="hidden lg:flex lg:items-center">{navItems}</div>
+
+//           {/* Right Side Items */}
+//           <div className="flex items-center gap-2 sm:gap-4 max-w-[90%] sm:max-w-[400px] lg:max-w-[500px]">
+//             {/* Theme Toggle */}
+//             <button
+//               onClick={toggleTheme}
+//               className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+//               aria-label="Toggle theme"
+//             >
+//               {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
+//             </button>
+
+//             {/* Search Field */}
+//             <div ref={searchRef} className="relative w-full max-w-[200px] sm:max-w-[250px] md:max-w-[300px] lg:max-w-[350px] flex">
+//               <form onSubmit={handleSearch} className="relative w-full">
+//                 <div className="relative flex items-center">
+//                   <input
+//                     type="text"
+//                     placeholder="Search "
+//                     className="w-full px-4 py-2 pl-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm text-sm sm:text-base transition-all"
+//                     value={searchQuery}
+//                     onChange={(e) => {
+//                       const value = e.target.value;
+//                       setSearchQuery(value);
+//                       fetchData(value);
+//                     }}
+//                   />
+//                   <Search className="absolute left-3 w-4 h-4 text-gray-500 dark:text-gray-400" />
+//                   <button
+//                     type="submit"
+//                     className="absolute right-1 flex items-center justify-center w-8 h-8 rounded-full text-white transition-colors duration-200"
+//                     aria-label="Search stocks"
+//                   >
+//                     <Search className="w-4 h-4" />
+//                   </button>
+//                 </div>
+//                 {error && <div className="absolute mt-1 text-xs text-red-600">{error}</div>}
+//                 {results.length > 0 && (
+//                   <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+//                     <SearchList
+//                       results={results}
+//                       query={searchQuery}
+//                       onSelectItem={handleSelectItem}
+//                       onClear={handleClearSearch}
+//                     />
+//                   </div>
+//                 )}
+//               </form>
+//             </div>
+
+//             {/* Login/Logout Button */}
+//             {isLoggedIn ? (
+//               <button
+//                 onClick={handleLogout}
+//                 className="hidden sm:flex bg-primary-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-sm sm:text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//               >
+//                 Logout
+//               </button>
+//             ) : (
+//               <button
+//                 onClick={handleLoginClick}
+//                 className="hidden sm:flex bg-primary-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-sm sm:text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//               >
+//                 Login
+//               </button>
+//             )}
+
+//             {/* Profile Section */}
+//             {isLoggedIn && (
+//               <div className="drawer drawer-end z-50" id="profile-section">
+//                 <input
+//                   id="my-drawer-4"
+//                   type="checkbox"
+//                   className="drawer-toggle"
+//                   onChange={handleDrawerToggle}
+//                 />
+//                 <div className="drawer-content">
+//                   <label htmlFor="my-drawer-4" className="drawer-button cursor-pointer">
+//                     <div className="avatar">
+//                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-primary-500 overflow-hidden shadow-md">
+//                         <img
+//                           src={profileImage || profile}
+//                           alt="Profile"
+//                           className="w-full h-full object-cover"
+//                           onError={(e) => {
+//                             e.target.src = profile; // Fallback on error
+//                           }}
+//                         />
+//                       </div>
+//                     </div>
+//                   </label>
+//                 </div>
+//                 <div className="drawer-side">
+//                   <label htmlFor="my-drawer-4" className="drawer-overlay bg-black/50"></label>
+//                   <div className="menu w-full sm:w-80 min-h-full bg-white dark:bg-gray-800 p-4 sm:p-5 shadow-lg text-gray-800 dark:text-white">
+//                     <div className="flex items-center gap-3 sm:gap-4 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-800 shadow-sm mb-4">
+//                       <div className="avatar">
+//                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-primary-400 overflow-hidden shadow-md">
+//                          <ProfilePicture src={profileImage || profile}  />
+//                         </div>
+//                       </div>
+//                       {userType && (
+//                         <div>
+//                           <p className="text-xs text-gray-500 dark:text-gray-400">Welcome back,</p>
+//                           <Username userType={userType} setFullName={setFullName} />
+//                         </div>
+//                       )}
+//                     </div>
+//                     <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
+//                       <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+//                         <input type="checkbox" className="peer" ref={profileCollapseRef} />
+//                         <div className="collapse-title flex gap-3 sm:gap-4 text-base sm:text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3">
+//                           <AiFillProfile className="text-primary-500 mt-1" />
+//                           View Profile
+//                         </div>
+//                         <div className="collapse-content px-4 pb-3 text-sm sm:text-base">
+//                           <Profile />
+//                         </div>
+//                       </div>
+//                       <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+//                         <input type="checkbox" className="peer" ref={settingsCollapseRef} />
+//                         <div className="collapse-title flex gap-3 sm:gap-4 text-base sm:text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3">
+//                           <MdOutlineSettings className="text-primary-500 mt-1" />
+//                           Settings
+//                         </div>
+//                         <div className="collapse-content px-4 pb-3 text-sm sm:text-base">
+//                           {userType === "individual" ? (
+//                             <div className="border-b border-gray-200 dark:border-gray-600 flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer">
+//                               <CgProfile className="text-primary-500 mt-1" />
+//                               <Link
+//                                 to="/updateIndividualProfile"
+//                                 className="block py-1 hover:text-primary-500"
+//                               >
+//                                 Update Profile
+//                               </Link>
+//                             </div>
+//                           ) : (
+//                             <div className="border-b border-gray-200 dark:border-gray-600 flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer">
+//                               <CgProfile className="text-primary-500 mt-1" />
+//                               <Link
+//                                 to="/updateCorporateProfile"
+//                                 className="block py-1 hover:text-primary-500"
+//                               >
+//                                 Update Corporate Profile
+//                               </Link>
+//                             </div>
+//                           )}
+//                           <div className="border-b border-gray-200 dark:border-gray-600 flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer"
+//                             onClick={handleLogout}
+//                           >
+//                             <HiOutlineLogout className="text-primary-500 mt-1" />
+//                             <span className="tracking-wide">Logout</span>
+//                           </div>
+//                           <div className="flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer"
+//                             onClick={() => setShowDeleteModal(true)}
+//                           >
+//                             <MdDelete className="text-primary-500 mt-1" />
+//                             <span className="tracking-wide">Delete Account</span>
+//                           </div>
+//                         </div>
+//                       </div>
+//                       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+//                         <div
+//                           className="flex gap-3 sm:gap-4 text-base sm:text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3 cursor-pointer"
+//                           onClick={handleOpenQuiz}
+//                         >
+//                           <BsQuestionCircle className="text-primary-500 mt-1" />
+//                           <span className="tracking-wide">Take Quiz</span>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             )}
+
+//             {/* Mobile Menu Button */}
+//             <div className="lg:hidden">
+//               <button
+//                 onClick={toggleMobileMenu}
+//                 className="btn btn-ghost text-gray-800 dark:text-white p-2"
+//                 aria-label="Open menu"
+//               >
+//                 {isMobileMenuOpen ? (
+//                   <FaTimes className="w-6 h-6" />
+//                 ) : (
+//                   <IoMdMenu className="w-6 h-6" />
+//                 )}
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Mobile Menu Content */}
+//         <div
+//           ref={mobileMenuRef}
+//           className={`fixed inset-0 top-16 z-40 bg-white dark:bg-gray-800 lg:hidden transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+//             }`}
+//         >
+//           <div className="p-4 overflow-y-auto h-full z-40 ">
+//             <div className="mb-4">
+//               <form onSubmit={handleSearch} className="relative">
+//                 <div className="relative flex items-center">
+//                   <input
+//                     type="text"
+//                     placeholder="Search stocks..."
+//                     className="w-full px-5 py-2 pl-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm text-sm"
+//                     value={searchQuery}
+//                     onChange={(e) => {
+//                       const value = e.target.value;
+//                       setSearchQuery(value);
+//                       fetchData(value);
+//                     }}
+//                   />
+//                   <Search className="absolute left-3 w-4 h-4 text-gray-500 dark:text-gray-400" />
+//                 </div>
+//                 {error && <div className="mt-1 text-xs text-red-600">{error}</div>}
+//                 {results.length > 0 && (
+//                   <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+//                     <SearchList
+//                       results={results}
+//                       query={searchQuery}
+//                       onSelectItem={handleSelectItem}
+//                       onClear={handleClearSearch}
+//                     />
+//                   </div>
+//                 )}
+//               </form>
+//             </div>
+
+//             <ul className="space-y-4">
+//               <li>
+//                 <Link
+//                   to="/"
+//                   onClick={() => handleNavClick("Home")}
+//                   className={`block py-2 text-base ${isActive("/") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+//                 >
+//                   Home
+//                 </Link>
+//               </li>
+//               <li>
+//                 <details>
+//                   <summary
+//                     className={`flex items-center justify-between py-2 text-base ${isActive("/portDash") ? "text-primary-500" : "text-gray-800 dark:text-white"} cursor-pointer`}
+//                   >
+//                     <span>Portfolio</span>
+//                     <IoMdArrowDropdown className="text-lg" />
+//                   </summary>
+//                   <ul className="pl-4 space-y-2 mt-2">
+//                     <li>
+//                       <Link
+//                         to="/portDash"
+//                         onClick={() => handleNavClick("Upload File")}
+//                         className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+//                       >
+//                         Upload File
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <Link
+//                         to="/portDash/my-portfolio"
+//                         onClick={() => handleNavClick("Saved Portfolio")}
+//                         className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+//                       >
+//                         Saved Portfolio
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <Link
+//                         to="/portDash/resculpt-portfolio"
+//                         onClick={() => handleNavClick("Recreate Portfolio")}
+//                         className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+//                       >
+//                         Recreate Portfolio
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <Link
+//                         to="/portDash/customize-portfolio"
+//                         onClick={() => handleNavClick("Create own Portfolio")}
+//                         className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+//                       >
+//                         BuildUrPortfolio
+//                       </Link>
+//                     </li>
+//                   </ul>
+//                 </details>
+//               </li>
+//               <li>
+//                 <Link
+//                   to="/equityhub"
+//                   onClick={() => handleNavClick("Equity Hub")}
+//                   className={`block py-2 text-base ${isActive("/equityhub") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+//                 >
+//                   Equity Insights
+//                 </Link>
+//               </li>
+
+//               <li>
+//                 <Link
+//                   to="/dashboard"
+//                   onClick={handleDashboardClick}
+//                   className={`block py-2 text-base ${isActive("/dashboard") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+//                 >
+//                   Research Panel
+//                 </Link>
+//               </li>
+//               <li>
+//                 <Link
+//                   to="/about"
+//                   onClick={() => handleNavClick("About")}
+//                   className={`block py-2 text-base ${isActive("/about") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+//                 >
+//                   About
+//                 </Link>
+//               </li>
+//               <li className={isDisabled ? "opacity-50 pointer-events-none" : ""}>
+//                 <Link
+//                   to="/plan"
+//                   onClick={() => handleNavClick("Subscription")}
+//                   className={`block py-2 text-base ${isActive('/plan') ? 'text-primary-500' : 'text-gray-800 dark:text-white'} hover:text-primary-500`}
+//                   data-tour="subscription-link"
+//                 >
+//                   Subscription
+//                 </Link>
+//               </li>
+//               {isLoggedIn && (
+//                 <li>
+//                   <button
+//                     onClick={handleOpenQuiz}
+//                     className="block w-full text-left py-2 text-base text-gray-800 dark:text-white hover:text-primary-500"
+//                   >
+//                     Take Quiz
+//                   </button>
+//                 </li>
+//               )}
+//               <li className="pt-4 border-t border-gray-200 dark:border-gray-700">
+//                 <button
+//                   onClick={toggleTheme}
+//                   className="flex items-center gap-2 text-gray-800 dark:text-white w-full py-2"
+//                 >
+//                   {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
+//                   Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
+//                 </button>
+//               </li>
+//               <li className="pt-2 border-t border-gray-200 dark:border-gray-700">
+//                 {isLoggedIn ? (
+//                   <button
+//                     onClick={handleLogout}
+//                     className="w-full bg-primary-500 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//                   >
+//                     Logout
+//                   </button>
+//                 ) : (
+//                   <button
+//                     onClick={handleLoginClick}
+//                     className="w-full bg-primary-500 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//                   >
+//                     Login
+//                   </button>
+//                 )}
+//               </li>
+//             </ul>
+//           </div>
+//         </div>
+//       </nav>
+
+//       {/* Login Modal */}
+//       {showLoginModal && (
+//         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+//           <div className="relative bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-[90%] sm:max-w-md shadow-xl">
+//             <button
+//               onClick={handleCloseModal}
+//               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+//             >
+//               <svg
+//                 className="w-5 h-5 sm:w-6 sm:h-6"
+//                 fill="none"
+//                 stroke="currentColor"
+//                 viewBox="0 0 24 24"
+//               >
+//                 <path
+//                   strokeLinecap="round"
+//                   strokeLinejoin="round"
+//                   strokeWidth="2"
+//                   d="M6 18L18 6M6 6l12 12"
+//                 />
+//               </svg>
+//             </button>
+//             <Login
+//               isOpen={showLoginModal}
+//               onClose={handleCloseModal}
+//               onSuccess={() => {
+//                 setIsLoggedIn(true);
+//                 handleCloseModal();
+//                 handleLoginSuccess();
+//               }}
+//             />
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Quiz Modal */}
+//       <QuizModal
+//         showModal={showQuizModal}
+//         setShowModal={setShowQuizModal}
+//         allQuestions={quizQuestions}
+//         userId={localStorage.getItem("userId") || null}
+//         onLoginClick={handleLoginClick}
+//       />
+
+//       {/* Delete Account Modal */}
+//       {showDeleteModal && (
+//         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+//           <div className="relative bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-[90%] sm:max-w-md shadow-xl">
+//             <button
+//               onClick={() => setShowDeleteModal(false)}
+//               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+//             >
+//               <svg
+//                 className="w-5 h-5 sm:w-6 sm:h-6"
+//                 fill="none"
+//                 stroke="currentColor"
+//                 viewBox="0 0 24 24"
+//               >
+//                 <path
+//                   strokeLinecap="round"
+//                   strokeLinejoin="round"
+//                   strokeWidth="2"
+//                   d="M6 18L18 6M6 6l12 12"
+//                 />
+//               </svg>
+//             </button>
+//             <div className="text-center">
+//               <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">Confirm Account Deletion</h2>
+//               <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">
+//                 Are you sure you want to delete your account? This action cannot be undone.
+//               </p>
+//               <div className="mt-4 sm:mt-6 flex justify-center gap-3 sm:gap-4">
+//                 <button
+//                   onClick={handleDeleteAccount}
+//                   className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white rounded text-sm sm:text-base hover:bg-red-700 transition-colors"
+//                 >
+//                   Delete
+//                 </button>
+//                 <button
+//                   onClick={() => setShowDeleteModal(false)}
+//                   className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded text-sm sm:text-base hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+//                 >
+//                   Cancel
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </>
+//   );
+// };
+
+// export default Navbar;
+
+
+
+
+
+
+// -----------------------wc-----------------------
+
+
+// import React, { useEffect, useState, useRef } from "react";
+// import Login from "./Login";
+// import { logActivity, getProfilePicture } from "../services/api";
+// import { Link, useLocation, useNavigate } from "react-router-dom";
+// import { FaSun, FaMoon, FaTimes } from "react-icons/fa";
+// import { MdDelete, MdOutlineSettings } from "react-icons/md";
+// import { AiFillProfile } from "react-icons/ai";
+// import { BsQuestionCircle } from "react-icons/bs";
+// import Profile from "./Profile";
+// import UpdateIndividualProfile from "./UpdateIndividualProfile";
+// import UpdateCorporateProfile from "./UpdateCorporateProfile";
+// import Username from "./Username";
+// import ProfilePicture from "./ProfilePicture";
+// import profile from "../../public/profile.png";
+// import { CgLogIn, CgProfile } from "react-icons/cg";
+// import { HiOutlineLogout } from "react-icons/hi";
+// import toast from "react-hot-toast";
+// import { useAuth } from "./AuthContext";
+// import { Search } from "lucide-react";
+// import SearchList from "./EquityHub/SearchList";
+// import axios from "axios";
+// import { IoMdArrowDropdown, IoMdMenu } from "react-icons/io";
+// import QuizModal from "./QuizModal";
+// import JwtUtil from "../services/JwtUtil";
+
+// const Navbar = () => {
+//   const [isLoggedIn, setIsLoggedIn] = useState(false);
+//   const [profileImage, setProfileImage] = useState(null);
+//   const [sticky, setSticky] = useState(false);
+//   const [userType, setUserType] = useState(localStorage.getItem('userType') || 'individual');
+//   const [fullName, setFullName] = useState("");
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [results, setResults] = useState([]);
+//   const [error, setError] = useState(null);
+//   const [showQuizModal, setShowQuizModal] = useState(false);
+//   const [quizQuestions, setQuizQuestions] = useState([]);
+//   const [hasShownQuizPopup, setHasShownQuizPopup] = useState(false);
+//   const [showDeleteModal, setShowDeleteModal] = useState(false);
+//   const [showLoginModal, setShowLoginModal] = useState(false);
+//   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+//   const [isDisabled, setIsDisabled] = useState(true);
+//   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+//   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+//   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const { login, logout } = useAuth();
+
+//   const profileCollapseRef = useRef(null);
+//   const settingsCollapseRef = useRef(null);
+//   const quizCollapseRef = useRef(null);
+//   const mobileMenuRef = useRef(null);
+//   const searchRef = useRef(null);
+//   const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
+//   const CACHE_TTL = 60 * 60 * 1000;
+//   const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+//   const TOKEN_CHECK_INTERVAL = 60 * 1000;
+
+//   let inactivityTimer;
+
+//   // Close mobile menu when clicking outside
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+//         setIsMobileMenuOpen(false);
+//       }
+//       if (searchRef.current && !searchRef.current.contains(event.target)) {
+//         setResults([]);
+//         setError(null);
+//       }
+//     };
+
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => {
+//       document.removeEventListener("mousedown", handleClickOutside);
+//     };
+//   }, []);
+
+//   // Theme effect
+//   useEffect(() => {
+//     if (theme === 'dark') {
+//       document.documentElement.classList.add('dark');
+//     } else {
+//       document.documentElement.classList.remove('dark');
+//     }
+//     localStorage.setItem('theme', theme);
+//   }, [theme]);
+
+//   const toggleTheme = () => {
+//     setTheme(theme === 'dark' ? 'light' : 'dark');
+//   };
+
+//   const resetInactivityTimer = () => {
+//     if (inactivityTimer) clearTimeout(inactivityTimer);
+//     if (isLoggedIn) inactivityTimer = setTimeout(handleLogout, INACTIVITY_TIMEOUT);
+//   };
+
+//   const handleLogout = async () => {
+//     const token = localStorage.getItem('authToken');
+//     const email = JwtUtil.extractEmail(token);
+
+//     if (!email) {
+//       toast.error("Missing user email. Cannot logout.");
+//       localStorage.removeItem('authToken');
+//       localStorage.removeItem('userType');
+//       localStorage.removeItem('userEmail');
+//       localStorage.removeItem('hasSeenQuizModal');
+//       localStorage.removeItem('hasTakenQuiz');
+//       logout();
+//       navigate('/');
+//       setIsLoggedIn(false);
+//       setHasShownQuizPopup(false);
+//       setShowQuizModal(false);
+//       setProfileImage(profile);
+//       return;
+//     }
+
+//     try {
+//       await axios.post(
+//         `${API_BASE}/auth/logout`,
+//         { email },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             'Content-Type': 'application/json',
+//           },
+//         }
+//       );
+//       toast.success("Logout successful");
+//     } catch (error) {
+//       console.error(error.response?.data?.message || "Logout API failed");
+//     } finally {
+//       localStorage.removeItem('authToken');
+//       localStorage.removeItem('userType');
+//       localStorage.removeItem('userEmail');
+//       localStorage.removeItem('hasSeenQuizModal');
+//       localStorage.removeItem('hasTakenQuiz');
+//       logout();
+//       navigate('/');
+//       setIsLoggedIn(false);
+//       setHasShownQuizPopup(false);
+//       setShowQuizModal(false);
+//       setProfileImage(profile);
+//       setIsMobileMenuOpen(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     const checkTokenExpiration = () => {
+//       const token = localStorage.getItem('authToken');
+//       if (token && JwtUtil.isTokenExpired(token)) {
+//         toast.error("Session expired. Please log in again.");
+//         handleLogout();
+//       }
+//     };
+
+//     if (isLoggedIn) {
+//       checkTokenExpiration();
+//       const interval = setInterval(checkTokenExpiration, TOKEN_CHECK_INTERVAL);
+//       return () => clearInterval(interval);
+//     }
+//   }, [isLoggedIn]);
+
+//   useEffect(() => {
+//     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+//     const handleActivity = () => resetInactivityTimer();
+
+//     if (isLoggedIn) {
+//       resetInactivityTimer();
+//       events.forEach(event => window.addEventListener(event, handleActivity));
+//     }
+
+//     return () => {
+//       if (inactivityTimer) clearTimeout(inactivityTimer);
+//       events.forEach(event => window.removeEventListener(event, handleActivity));
+//     };
+//   }, [isLoggedIn]);
+
+//   useEffect(() => {
+//     const fetchQuestions = async () => {
+//       try {
+//         const res = await axios.get(`${API_BASE}/assessment/questions`);
+//         if (res.status === 200) setQuizQuestions(res.data);
+//       } catch (error) {
+//         console.error("Failed to fetch quiz questions", error);
+//         toast.error("Failed to load quiz questions");
+//       }
+//     };
+//     fetchQuestions();
+//   }, []);
+
+//   const handlePortfolioClick = (e) => {
+//     e.preventDefault();
+//     setIsPortfolioOpen(true);
+//     handleNavClick("Portfolio");
+//     navigate("/portDash");
+//   };
+
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (!event.target.closest("#portfolio-dropdown")) setIsPortfolioOpen(false);
+//     };
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => document.removeEventListener("mousedown", handleClickOutside);
+//   }, []);
+
+//   useEffect(() => {
+//     const handleScroll = () => setSticky(window.scrollY > 0);
+//     window.addEventListener("scroll", handleScroll);
+//     return () => window.removeEventListener("scroll", handleScroll);
+//   }, []);
+
+//   const fetchProfileImage = async () => {
+//     try {
+//       const url = await getProfilePicture();
+//       setProfileImage(url ? `${url}?t=${Date.now()}` : profile);
+//     } catch (error) {
+//       console.error("Failed to fetch profile picture:", error);
+//       setProfileImage(profile);
+//       toast.error("Failed to load profile picture");
+//     }
+//   };
+
+//   useEffect(() => {
+//     const storedUserType = localStorage.getItem("userType") || "individual";
+//     setUserType(storedUserType);
+
+//     const token = localStorage.getItem("authToken");
+//     const isCurrentlyLoggedIn = !!token && !JwtUtil.isTokenExpired(token);
+//     setIsLoggedIn(isCurrentlyLoggedIn);
+
+//     if (isCurrentlyLoggedIn) fetchProfileImage();
+//     else setProfileImage(profile);
+//   }, [isLoggedIn]);
+
+//   const fetchName = async () => {
+//     const token = localStorage.getItem('authToken');
+//     if (!token) return;
+
+//     const email = JwtUtil.extractEmail(token);
+//     if (!email) return;
+
+//     try {
+//       const url = userType === 'corporate' ? `/corporate/${email}` : `/Userprofile/${email}`;
+//       const response = await axios.get(`${API_BASE}${url}`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+
+//       const name = userType === 'corporate' ? response.data.employeeName : response.data.fullname || response.data.fullName;
+//       setFullName(name);
+//     } catch (error) {
+//       console.error('Failed to fetch user name:', error);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchName();
+
+//     const syncName = () => {
+//       setUserType(localStorage.getItem('userType') || 'individual');
+//       fetchName();
+//     };
+
+//     window.addEventListener('authChange', syncName);
+//     window.addEventListener('storage', syncName);
+
+//     return () => {
+//       window.removeEventListener('authChange', syncName);
+//       window.removeEventListener('storage', syncName);
+//     };
+//   }, []);
+
+//   useEffect(() => {
+//     const token = localStorage.getItem("authToken");
+//     const isCurrentlyLoggedIn = !!token && !JwtUtil.isTokenExpired(token);
+//     setIsLoggedIn(isCurrentlyLoggedIn);
+
+//     if (isCurrentlyLoggedIn && !localStorage.getItem("hasTakenQuiz")) {
+//       const hasSeenQuizModal = localStorage.getItem("hasSeenQuizModal") === "true";
+//       if (!hasShownQuizPopup && !hasSeenQuizModal) {
+//         const timer = setTimeout(() => {
+//           setShowQuizModal(true);
+//           setHasShownQuizPopup(true);
+//         }, 3000);
+//         return () => clearTimeout(timer);
+//       }
+//     }
+//   }, [isLoggedIn, hasShownQuizPopup]);
+
+//   const handleDeleteAccount = async () => {
+//     const apiUrl = userType === "corporate" ? `${API_BASE}/corporate/delete-account` : `${API_BASE}/Userprofile/delete-account`;
+
+//     try {
+//       await axios.delete(apiUrl, {
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+//           "Content-Type": "application/json",
+//         },
+//       });
+//       toast.success("Account deleted successfully");
+//       localStorage.removeItem("authToken");
+//       localStorage.removeItem("userType");
+//       localStorage.removeItem("hasSeenQuizModal");
+//       localStorage.removeItem("hasTakenQuiz");
+//       logout();
+//       navigate("/");
+//       setShowDeleteModal(false);
+//       setProfileImage(profile);
+//       setIsMobileMenuOpen(false);
+//     } catch (err) {
+//       toast.error(err.response?.data?.message || "Failed to delete account");
+//     }
+//   };
+
+//   const handleNavClick = async (label) => {
+//     await logActivity(`${label} tab clicked`);
+//     setIsMobileMenuOpen(false);
+//   };
+
+//   const isActive = (path) => location.pathname === path;
+
+//   const handleDashboardClick = (e) => {
+//     if (!isLoggedIn) {
+//       e.preventDefault();
+//       toast.error("Please login to access the Dashboard");
+//     } else {
+//       handleNavClick("Dashboard");
+//     }
+//   };
+
+//   const getCachedData = (key) => {
+//     const cached = localStorage.getItem(key);
+//     if (!cached) return null;
+//     try {
+//       const { data, timestamp } = JSON.parse(cached);
+//       if (Date.now() - timestamp > CACHE_TTL) {
+//         localStorage.removeItem(key);
+//         return null;
+//       }
+//       return data;
+//     } catch (err) {
+//       setError("Failed to parse cached data.");
+//       console.error("Cache parse error:", err);
+//       return null;
+//     }
+//   };
+
+//   const setCachedData = (key, data) => {
+//     try {
+//       localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+//     } catch (err) {
+//       setError("Failed to cache data.");
+//       console.error("Cache set error:", err);
+//     }
+//   };
+
+//   const fetchData = async (value) => {
+//     if (!value || value.length < 2) {
+//       setResults([]);
+//       setError(null);
+//       return;
+//     }
+
+//     const cacheKey = `search_${value.toLowerCase()}`;
+//     const cachedResults = getCachedData(cacheKey);
+//     if (cachedResults) {
+//       setResults(cachedResults);
+//       return;
+//     }
+
+//     try {
+//       const response = await axios.get(`${API_BASE}/stocks/test/suggest`, {
+//         params: { prefix: value },
+//       });
+//       const filteredResults = response.data.filter((symbol) =>
+//         symbol?.symbol?.toLowerCase().includes(value.toLowerCase())
+//       );
+//       if (filteredResults.length === 0) {
+//         setError("No matching stocks found.");
+//       } else {
+//         setResults(filteredResults);
+//         setCachedData(cacheKey, filteredResults);
+//         setError(null);
+//       }
+//     } catch (error) {
+//       setError(error.response?.data?.error || error.message || "Failed to fetch search results.");
+//       setResults([]);
+//     }
+//   };
+
+//   const handleSearch = (e) => {
+//     e.preventDefault();
+//     if (searchQuery.trim()) {
+//       navigate(`/equityhub?query=${encodeURIComponent(searchQuery)}`);
+//       setSearchQuery("");
+//       setResults([]);
+//       setError(null);
+//       setIsMobileMenuOpen(false);
+//     }
+//   };
+
+//   const handleSelectItem = (item) => {
+//     if (item && item.symbol) {
+//       setSearchQuery("");
+//       setResults([]);
+//       setError(null);
+//       navigate(`/equityhub?query=${encodeURIComponent(item.symbol)}`);
+//       setIsMobileMenuOpen(false);
+//     }
+//   };
+
+//   const handleClearSearch = () => {
+//     setSearchQuery("");
+//     setResults([]);
+//     setError(null);
+//   };
+
+//   const handleLoginClick = () => {
+//     setShowLoginModal(true);
+//     setIsMobileMenuOpen(false);
+//   };
+
+//   const handleCloseModal = () => setShowLoginModal(false);
+
+//   const handleLoginSuccess = () => {
+//     login();
+//     handleCloseModal();
+//     setIsLoggedIn(true);
+//     localStorage.removeItem("hasSeenQuizModal");
+//     localStorage.removeItem("hasTakenQuiz");
+//     setHasShownQuizPopup(false);
+//     fetchProfileImage();
+//   };
+
+//   const handleOpenQuiz = () => {
+//     setShowQuizModal(true);
+//     setIsMobileMenuOpen(false);
+//   };
+
+//   const handleDrawerToggle = (e) => {
+//     const isChecked = e.target.checked;
+//     setIsDrawerOpen(isChecked);
+//     if (isChecked) {
+//       if (profileCollapseRef.current) profileCollapseRef.current.checked = false;
+//       if (settingsCollapseRef.current) settingsCollapseRef.current.checked = false;
+//       if (quizCollapseRef.current) quizCollapseRef.current.checked = false;
+//     }
+//   };
+
+//   const toggleMobileMenu = () => {
+//     setIsMobileMenuOpen(!isMobileMenuOpen);
+//   };
+
+//   const navItems = (
+//     <ul className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-6">
+//       <li>
+//         <Link
+//           to="/"
+//           onClick={() => handleNavClick("Home")}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/") ? "text-sky-500 underline underline-offset-8 font-bold" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Home
+//         </Link>
+//       </li>
+//       <li
+//         id="portfolio-dropdown"
+//         className="relative"
+//         onMouseEnter={() => setIsPortfolioOpen(true)}
+//         onMouseLeave={() => setIsPortfolioOpen(false)}
+//       >
+//         <span
+//           onClick={handlePortfolioClick}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out cursor-pointer 
+//             ${isActive("/portDash") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Portfolio
+//         </span>
+//         {isPortfolioOpen && (
+//           <ul
+//             className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-2 z-10 lg:mt-0 border border-gray-200 dark:border-gray-700"
+//             onMouseEnter={() => setIsPortfolioOpen(true)}
+//             onMouseLeave={() => setIsPortfolioOpen(false)}
+//           >
+//             <li>
+//               <Link
+//                 to="/portDash"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+//               >
+//                 Upload File
+//               </Link>
+//               <Link
+//                 to="/portDash/my-portfolio"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+//               >
+//                 Saved Portfolio
+//               </Link>
+//             </li>
+//             <li>
+//               <Link
+//                 to="/portDash/resculpt-portfolio"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+//               >
+//                 Recreate Portfolio
+//               </Link>
+//             </li>
+//             <li>
+//               <Link
+//                 to="/portDash/customize-portfolio"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+//               >
+//                 Create own Portfolio
+//               </Link>
+//             </li>
+//           </ul>
+//         )}
+//       </li>
+//       <li>
+//         <Link
+//           to="/equityhub"
+//           onClick={() => handleNavClick("Equity Hub")}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/equityhub") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Equity Insights
+//         </Link>
+//       </li>
+//       <li>
+//         <Link
+//           to="/dashboard"
+//           onClick={handleDashboardClick}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/dashboard") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Research Panel
+//         </Link>
+//       </li>
+//       <li>
+//         <Link
+//           to="/about"
+//           onClick={() => handleNavClick("About")}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/about") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           About
+//         </Link>
+//       </li>
+//       <li className={isDisabled ? "opacity-50 pointer-events-none" : ""}>
+//         <Link
+//           to="/plan"
+//           onClick={(e) => {
+//             if (isDisabled) {
+//               e.preventDefault();
+//               return;
+//             }
+//             handleNavClick("Subscription");
+//           }}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive('/plan') ? 'text-sky-500 underline underline-offset-8' : 'text-gray-800 dark:text-white'} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//           data-tour="subscription-link"
+//         >
+//           Subscription
+//         </Link>
+//       </li>
+//     </ul>
+//   );
+
+//   return (
+//     <>
+//       <nav
+//         className={`fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 md:px-8 lg:px-10 py-3 transition-all duration-300 ${sticky
+//             ? "bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-md border-b border-gray-200 dark:border-gray-700"
+//             : "bg-natural-800 shadow-md"
+//           }`}
+//       >
+//         <div className="max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-y-4">
+//           {/* Left Side Items for Mobile */}
+//           <div className="flex items-center gap-2 lg:hidden">
+//             {/* Theme Toggle */}
+//             <button
+//               onClick={toggleTheme}
+//               className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+//               aria-label="Toggle theme"
+//             >
+//               {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
+//             </button>
+
+//             {/* Search Field */}
+//             <div ref={searchRef} className="relative w-full max-w-[200px] sm:max-w-[250px] flex">
+//               <form onSubmit={handleSearch} className="relative w-full">
+//                 <div className="relative flex items-center">
+//                   <input
+//                     type="text"
+//                     placeholder="Search"
+//                     className="w-full px-4 py-2 pl-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm text-sm sm:text-base transition-all"
+//                     value={searchQuery}
+//                     onChange={(e) => {
+//                       const value = e.target.value;
+//                       setSearchQuery(value);
+//                       fetchData(value);
+//                     }}
+//                   />
+//                   <Search className="absolute left-3 w-4 h-4 text-gray-500 dark:text-gray-400" />
+//                   <button
+//                     type="submit"
+//                     className="absolute right-1 flex items-center justify-center w-8 h-8 rounded-full text-white transition-colors duration-200"
+//                     aria-label="Search stocks"
+//                   >
+//                     <Search className="w-4 h-4" />
+//                   </button>
+//                 </div>
+//                 {error && <div className="absolute mt-1 text-xs text-red-600">{error}</div>}
+//                 {results.length > 0 && (
+//                   <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+//                     <SearchList
+//                       results={results}
+//                       query={searchQuery}
+//                       onSelectItem={handleSelectItem}
+//                       onClear={handleClearSearch}
+//                     />
+//                   </div>
+//                 )}
+//               </form>
+//             </div>
+
+//             {/* Login/Logout Button for Mobile */}
+//             {isLoggedIn ? (
+//               <button
+//                 onClick={handleLogout}
+//                 className="bg-primary-500 text-white px-3 py-1.5 rounded-full text-sm font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//               >
+//                 Logout
+//               </button>
+//             ) : (
+//               <button
+//                 onClick={handleLoginClick}
+//                 className="bg-gradient-to-r from-sky-600 to-cyan-600 text-white px-3 py-1.5 rounded-full text-sm font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//               >
+//                 Login
+//               </button>
+//             )}
+//           </div>
+
+//           {/* Desktop Navigation */}
+//           <div className="hidden lg:flex lg:items-center">{navItems}</div>
+
+//           {/* Right Side Items for Desktop */}
+//           <div className="hidden lg:flex items-center gap-4 max-w-[500px]">
+//             {/* Theme Toggle */}
+//             <button
+//               onClick={toggleTheme}
+//               className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+//               aria-label="Toggle theme"
+//             >
+//               {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
+//             </button>
+
+//             {/* Search Field */}
+//             <div ref={searchRef} className="relative w-full max-w-[350px] flex">
+//               <form onSubmit={handleSearch} className="relative w-full">
+//                 <div className="relative flex items-center">
+//                   <input
+//                     type="text"
+//                     placeholder="Search"
+//                     className="w-full px-4 py-2 pl-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm text-base transition-all"
+//                     value={searchQuery}
+//                     onChange={(e) => {
+//                       const value = e.target.value;
+//                       setSearchQuery(value);
+//                       fetchData(value);
+//                     }}
+//                   />
+//                   <Search className="absolute left-3 w-4 h-4 text-gray-500 dark:text-gray-400" />
+//                   <button
+//                     type="submit"
+//                     className="absolute right-1 flex items-center justify-center w-8 h-8 rounded-full text-white transition-colors duration-200"
+//                     aria-label="Search stocks"
+//                   >
+//                     <Search className="w-4 h-4" />
+//                   </button>
+//                 </div>
+//                 {error && <div className="absolute mt-1 text-xs text-red-600">{error}</div>}
+//                 {results.length > 0 && (
+//                   <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+//                     <SearchList
+//                       results={results}
+//                       query={searchQuery}
+//                       onSelectItem={handleSelectItem}
+//                       onClear={handleClearSearch}
+//                     />
+//                   </div>
+//                 )}
+//               </form>
+//             </div>
+
+//             {/* Login/Logout Button for Desktop */}
+//             {isLoggedIn ? (
+//               <button
+//                 onClick={handleLogout}
+//                 className="bg-primary-500 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//               >
+//                 Logout
+//               </button>
+//             ) : (
+//               <button
+//                 onClick={handleLoginClick}
+//                 className="bg-gradient-to-r from-sky-600 to-cyan-600 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//               >
+//                 Login
+//               </button>
+//             )}
+
+//             {/* Profile Section */}
+//             {isLoggedIn && (
+//               <div className="drawer drawer-end z-50" id="profile-section">
+//                 <input
+//                   id="my-drawer-4"
+//                   type="checkbox"
+//                   className="drawer-toggle"
+//                   onChange={handleDrawerToggle}
+//                 />
+//                 <div className="drawer-content">
+//                   <label htmlFor="my-drawer-4" className="drawer-button cursor-pointer">
+//                     <div className="avatar">
+//                       <div className="w-10 h-10 rounded-full ring-2 ring-primary-500 overflow-hidden shadow-md">
+//                         <img
+//                           src={profileImage || profile}
+//                           alt="Profile"
+//                           className="w-full h-full object-cover"
+//                           onError={(e) => {
+//                             e.target.src = profile; // Fallback on error
+//                           }}
+//                         />
+//                       </div>
+//                     </div>
+//                   </label>
+//                 </div>
+//                 <div className="drawer-side">
+//                   <label htmlFor="my-drawer-4" className="drawer-overlay bg-black/50"></label>
+//                   <div className="menu w-full sm:w-80 min-h-full bg-white dark:bg-gray-800 p-4 sm:p-5 shadow-lg text-gray-800 dark:text-white">
+//                     <div className="flex items-center gap-3 sm:gap-4 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-800 shadow-sm mb-4">
+//                       <div className="avatar">
+//                         <div className="w-12 h-12 rounded-full border-2 border-primary-400 overflow-hidden shadow-md">
+//                           <ProfilePicture src={profileImage || profile} />
+//                         </div>
+//                       </div>
+//                       {userType && (
+//                         <div>
+//                           <p className="text-xs text-gray-500 dark:text-gray-400">Welcome back,</p>
+//                           <Username userType={userType} setFullName={setFullName} />
+//                         </div>
+//                       )}
+//                     </div>
+//                     <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
+//                       <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+//                         <input type="checkbox" className="peer" ref={profileCollapseRef} />
+//                         <div className="collapse-title flex gap-3 sm:gap-4 text-base sm:text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3">
+//                           <AiFillProfile className="text-primary-500 mt-1" />
+//                           View Profile
+//                         </div>
+//                         <div className="collapse-content px-4 pb-3 text-sm sm:text-base">
+//                           <Profile />
+//                         </div>
+//                       </div>
+//                       <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+//                         <input type="checkbox" className="peer" ref={settingsCollapseRef} />
+//                         <div className="collapse-title flex gap-3 sm:gap-4 text-base sm:text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3">
+//                           <MdOutlineSettings className="theme-primary-500 mt-1" />
+//                           Settings
+//                         </div>
+//                         <div className="collapse-content px-4 pb-3 text-sm sm:text-base">
+//                           {userType === "individual" ? (
+//                             <div className="border-b border-gray-200 dark:border-gray-600 flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer">
+//                               <CgProfile className="text-primary-500 mt-1" />
+//                               <Link
+//                                 to="/updateIndividualProfile"
+//                                 className="block py-1 hover:text-primary-500"
+//                               >
+//                                 Update Profile
+//                               </Link>
+//                             </div>
+//                           ) : (
+//                             <div className="border-b border-gray-200 dark:border-gray-600 flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer">
+//                               <CgProfile className="text-primary-500 mt-1" />
+//                               <Link
+//                                 to="/updateCorporateProfile"
+//                                 className="block py-1 hover:text-primary-500"
+//                               >
+//                                 Update Corporate Profile
+//                               </Link>
+//                             </div>
+//                           )}
+//                           <div
+//                             className="border-b border-gray-200 dark:border-gray-600 flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer"
+//                             onClick={handleLogout}
+//                           >
+//                             <HiOutlineLogout className="text-primary-500 mt-1" />
+//                             <span className="tracking-wide">Logout</span>
+//                           </div>
+//                           <div
+//                             className="flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer"
+//                             onClick={() => setShowDeleteModal(true)}
+//                           >
+//                             <MdDelete className="text-primary-500 mt-1" />
+//                             <span className="tracking-wide">Delete Account</span>
+//                           </div>
+//                         </div>
+//                       </div>
+//                       <div className="bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+//                         <div
+//                           className="flex gap-3 sm:gap-4 text-base sm:text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3 cursor-pointer"
+//                           onClick={handleOpenQuiz}
+//                         >
+//                           <BsQuestionCircle className="text-primary-500 mt-1" />
+//                           <span className="tracking-wide">Take Quiz</span>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             )}
+//           </div>
+
+//           {/* Mobile Menu Button */}
+//           <div className="lg:hidden">
+//             <button
+//               onClick={toggleMobileMenu}
+//               className="btn btn-ghost text-gray-800 dark:text-white p-2"
+//               aria-label="Open menu"
+//             >
+//               {isMobileMenuOpen ? <FaTimes className="w-6 h-6" /> : <IoMdMenu className="w-6 h-6" />}
+//             </button>
+//           </div>
+//         </div>
+
+//         {/* Mobile Menu Content */}
+//         <div
+//           ref={mobileMenuRef}
+//           className={`fixed inset-0 top-16 z-40 bg-white dark:bg-gray-800 lg:hidden transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+//             }`}
+//         >
+//           <div className="p-4 overflow-y-auto h-full">
+//             <div className="mb-4">
+//               <form onSubmit={handleSearch} className="relative">
+//                 <div className="relative flex items-center">
+//                   <input
+//                     type="text"
+//                     placeholder="Search stocks..."
+//                     className="w-full px-5 py-2 pl-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm text-sm"
+//                     value={searchQuery}
+//                     onChange={(e) => {
+//                       const value = e.target.value;
+//                       setSearchQuery(value);
+//                       fetchData(value);
+//                     }}
+//                   />
+//                   <Search className="absolute left-3 w-4 h-4 text-gray-500 dark:text-gray-400" />
+//                 </div>
+//                 {error && <div className="mt-1 text-xs text-red-600">{error}</div>}
+//                 {results.length > 0 && (
+//                   <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+//                     <SearchList
+//                       results={results}
+//                       query={searchQuery}
+//                       onSelectItem={handleSelectItem}
+//                       onClear={handleClearSearch}
+//                     />
+//                   </div>
+//                 )}
+//               </form>
+//             </div>
+//             <ul className="space-y-4">
+//               <li>
+//                 <Link
+//                   to="/"
+//                   onClick={() => handleNavClick("Home")}
+//                   className={`block py-2 text-base ${isActive("/") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+//                 >
+//                   Home
+//                 </Link>
+//               </li>
+//               <li>
+//                 <details>
+//                   <summary
+//                     className={`flex items-center justify-between py-2 text-base ${isActive("/portDash") ? "text-primary-500" : "text-gray-800 dark:text-white"
+//                       } cursor-pointer`}
+//                   >
+//                     <span>Portfolio</span>
+//                     <IoMdArrowDropdown className="text-lg" />
+//                   </summary>
+//                   <ul className="pl-4 space-y-2 mt-2">
+//                     <li>
+//                       <Link
+//                         to="/portDash"
+//                         onClick={() => handleNavClick("Upload File")}
+//                         className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+//                       >
+//                         Upload File
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <Link
+//                         to="/portDash/my-portfolio"
+//                         onClick={() => handleNavClick("Saved Portfolio")}
+//                         className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+//                       >
+//                         Saved Portfolio
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <Link
+//                         to="/portDash/resculpt-portfolio"
+//                         onClick={() => handleNavClick("Recreate Portfolio")}
+//                         className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+//                       >
+//                         Recreate Portfolio
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <Link
+//                         to="/portDash/customize-portfolio"
+//                         onClick={() => handleNavClick("Create own Portfolio")}
+//                         className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+//                       >
+//                         BuildUrPortfolio
+//                       </Link>
+//                     </li>
+//                   </ul>
+//                 </details>
+//               </li>
+//               <li>
+//                 <Link
+//                   to="/equityhub"
+//                   onClick={() => handleNavClick("Equity Hub")}
+//                   className={`block py-2 text-base ${isActive("/equityhub") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+//                 >
+//                   Equity
+//                 </Link>
+//               </li>
+//               <li>
+//                 <Link
+//                   to="/dashboard"
+//                   onClick={handleDashboardClick}
+//                   className={`block py-2 text-base ${isActive("/dashboard") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+//                 >
+//                   Dashboard
+//                 </Link>
+//               </li>
+//               <li>
+//                 <Link
+//                   to="/about"
+//                   onClick={() => handleNavClick("About")}
+//                   className={`block py-2 text-base ${isActive("/about") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+//                 >
+//                   About
+//                 </Link>
+//               </li>
+//               <li className={isDisabled ? "opacity-50 pointer-events-none" : ""}>
+//                 <Link
+//                   to="/plan"
+//                   onClick={() => handleNavClick("Subscription")}
+//                   className={`block py-2 text-base ${isActive("/plan") ? "text-primary-500" : "text-gray-800 dark:text-white"} hover:text-primary-500`}
+//                   data-tour="subscription-link"
+//                 >
+//                   Subscription
+//                 </Link>
+//               </li>
+//               {isLoggedIn && (
+//                 <li>
+//                   <button
+//                     onClick={handleOpenQuiz}
+//                     className="block w-full text-left py-2 text-base text-gray-800 dark:text-white hover:text-primary-500"
+//                   >
+//                     Take Quiz
+//                   </button>
+//                 </li>
+//               )}
+//               <li className="pt-4 border-t border-gray-200 dark:border-gray-700">
+//                 <button
+//                   onClick={toggleTheme}
+//                   className="flex items-center gap-2 text-gray-800 dark:text-white w-full py-2"
+//                 >
+//                   {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
+//                   Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
+//                 </button>
+//               </li>
+//               <li className="pt-2 border-t border-gray-200 dark:border-gray-700">
+//                 {isLoggedIn ? (
+//                   <button
+//                     onClick={handleLogout}
+//                     className="w-full bg-primary-500 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//                   >
+//                     Logout
+//                   </button>
+//                 ) : (
+//                   <button
+//                     onClick={handleLoginClick}
+//                     className="w-full bg-sky-500 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+//                   >
+//                     Login
+//                   </button>
+//                 )}
+//               </li>
+//             </ul>
+//           </div>
+//         </div>
+//       </nav>
+
+//       {/* Login Modal */}
+//       {showLoginModal && (
+//         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+//           <div className="relative bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-[90%] sm:max-w-md shadow-xl">
+//             <button
+//               onClick={handleCloseModal}
+//               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+//             >
+//               <svg
+//                 className="w-5 h-5 sm:w-6 sm:h-6"
+//                 fill="none"
+//                 stroke="currentColor"
+//                 viewBox="0 0 24 24"
+//               >
+//                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+//               </svg>
+//             </button>
+//             <Login
+//               isOpen={showLoginModal}
+//               onClose={handleCloseModal}
+//               onSuccess={() => {
+//                 setIsLoggedIn(true);
+//                 handleCloseModal();
+//                 handleLoginSuccess();
+//               }}
+//             />
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Quiz Modal */}
+//       <QuizModal
+//         showModal={showQuizModal}
+//         setShowModal={setShowQuizModal}
+//         allQuestions={quizQuestions}
+//         userId={localStorage.getItem("userId") || null}
+//         onLoginClick={handleLoginClick}
+//       />
+
+//       {/* Delete Account Modal */}
+//       {showDeleteModal && (
+//         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+//           <div className="relative bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-[90%] sm:max-w-md shadow-xl">
+//             <button
+//               onClick={() => setShowDeleteModal(false)}
+//               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+//             >
+//               <svg
+//                 className="w-5 h-5 sm:w-6 sm:h-6"
+//                 fill="none"
+//                 stroke="currentColor"
+//                 viewBox="0 0 24 24"
+//               >
+//                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+//               </svg>
+//             </button>
+//             <div className="text-center">
+//               <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">Confirm Account Deletion</h2>
+//               <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">
+//                 Are you sure you want to delete your account? This action cannot be undone.
+//               </p>
+//               <div className="mt-4 sm:mt-6 flex justify-center gap-3 sm:gap-4">
+//                 <button
+//                   onClick={handleDeleteAccount}
+//                   className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white rounded text-sm sm:text-base hover:bg-red-700 transition-colors"
+//                 >
+//                   Delete
+//                 </button>
+//                 <button
+//                   onClick={() => setShowDeleteModal(false)}
+//                   className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded text-sm sm:text-base hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+//                 >
+//                   Cancel
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </>
+//   );
+// };
+
+// export default Navbar;
+
+
+
+
+
+
+
 import React, { useEffect, useState, useRef } from "react";
-import Login from "./Login";
 import { logActivity, getProfilePicture } from "../services/api";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FaSun, FaMoon, FaTimes } from "react-icons/fa";
@@ -2102,7 +4283,6 @@ const Navbar = () => {
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [hasShownQuizPopup, setHasShownQuizPopup] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
   const [isDisabled, setIsDisabled] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -2438,7 +4618,6 @@ const Navbar = () => {
     try {
       const response = await axios.get(`${API_BASE}/stocks/test/suggest`, {
         params: { prefix: value },
-
       });
       const filteredResults = response.data.filter((symbol) =>
         symbol?.symbol?.toLowerCase().includes(value.toLowerCase())
@@ -2484,15 +4663,13 @@ const Navbar = () => {
   };
 
   const handleLoginClick = () => {
-    setShowLoginModal(true);
+    // Pass the current pathname to the login page
+    navigate("/login", { state: { from: location.pathname } });
     setIsMobileMenuOpen(false);
   };
 
-  const handleCloseModal = () => setShowLoginModal(false);
-
   const handleLoginSuccess = () => {
     login();
-    handleCloseModal();
     setIsLoggedIn(true);
     localStorage.removeItem("hasSeenQuizModal");
     localStorage.removeItem("hasTakenQuiz");
@@ -2526,8 +4703,8 @@ const Navbar = () => {
           to="/"
           onClick={() => handleNavClick("Home")}
           className={`text-base font-medium transition-all duration-300 ease-in-out 
-            ${isActive("/") ? "text-primary-500 underline underline-offset-8 font-bold" : "text-gray-800 dark:text-white"} 
-            hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+            ${isActive("/") ? "text-sky-500 underline underline-offset-8 font-bold" : "text-gray-800 dark:text-white"} 
+            hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
         >
           Home
         </Link>
@@ -2541,8 +4718,8 @@ const Navbar = () => {
         <span
           onClick={handlePortfolioClick}
           className={`text-base font-medium transition-all duration-300 ease-in-out cursor-pointer 
-            ${isActive("/portDash") ? "text-primary-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
-            hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+            ${isActive("/portDash") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+            hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
         >
           Portfolio
         </span>
@@ -2556,14 +4733,14 @@ const Navbar = () => {
               <Link
                 to="/portDash"
                 onClick={() => setIsPortfolioOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+                className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sky-500 transition-colors duration-200"
               >
                 Upload File
               </Link>
               <Link
                 to="/portDash/my-portfolio"
                 onClick={() => setIsPortfolioOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+                className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sky-500 transition-colors duration-200"
               >
                 Saved Portfolio
               </Link>
@@ -2572,7 +4749,7 @@ const Navbar = () => {
               <Link
                 to="/portDash/resculpt-portfolio"
                 onClick={() => setIsPortfolioOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+                className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sky-500 transition-colors duration-200"
               >
                 Recreate Portfolio
               </Link>
@@ -2581,7 +4758,7 @@ const Navbar = () => {
               <Link
                 to="/portDash/customize-portfolio"
                 onClick={() => setIsPortfolioOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500"
+                className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sky-500 transition-colors duration-200"
               >
                 Create own Portfolio
               </Link>
@@ -2594,20 +4771,19 @@ const Navbar = () => {
           to="/equityhub"
           onClick={() => handleNavClick("Equity Hub")}
           className={`text-base font-medium transition-all duration-300 ease-in-out 
-            ${isActive("/equityhub") ? "text-primary-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
-            hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+            ${isActive("/equityhub") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+            hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
         >
           Equity Insights
         </Link>
       </li>
-
       <li>
         <Link
-          to="/dashboard"
+          to="/researchPanel"
           onClick={handleDashboardClick}
           className={`text-base font-medium transition-all duration-300 ease-in-out 
-            ${isActive("/dashboard") ? "text-primary-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
-            hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+            ${isActive("/researchPanel") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+            hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
         >
           Research Panel
         </Link>
@@ -2617,8 +4793,8 @@ const Navbar = () => {
           to="/about"
           onClick={() => handleNavClick("About")}
           className={`text-base font-medium transition-all duration-300 ease-in-out 
-            ${isActive("/about") ? "text-primary-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
-            hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+            ${isActive("/about") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+            hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
         >
           About
         </Link>
@@ -2634,8 +4810,8 @@ const Navbar = () => {
             handleNavClick("Subscription");
           }}
           className={`text-base font-medium transition-all duration-300 ease-in-out 
-            ${isActive('/plan') ? 'text-primary-500 underline underline-offset-8' : 'text-gray-800 dark:text-white'} 
-            hover:text-primary-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+            ${isActive('/plan') ? 'text-sky-500 underline underline-offset-8' : 'text-gray-800 dark:text-white'} 
+            hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
           data-tour="subscription-link"
         >
           Subscription
@@ -2648,43 +4824,36 @@ const Navbar = () => {
     <>
       <nav
         className={`fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 md:px-8 lg:px-10 py-3 transition-all duration-300 ${sticky
-          ? "bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-md border-b border-gray-200 dark:border-gray-700"
-          : "bg-transparent"
+          ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg shadow-lg border-b border-gray-200/50 dark:border-gray-700/50"
+          : "bg-transparent shadow-md"
           }`}
       >
         <div className="max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-y-4">
-          {/* Logo */}
-          {/* <Link to="/" className="text-2xl font-bold text-primary-600 dark:text-white flex items-center">
-            <span className="bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-              #CMDA
-            </span>
-            <span className="ml-1 text-xs bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded-full">
-              BETA
-            </span>
-          </Link> */}
-
           {/* Desktop Navigation */}
           <div className="hidden lg:flex lg:items-center">{navItems}</div>
 
           {/* Right Side Items */}
-          <div className="flex items-center gap-2 sm:gap-4 max-w-[90%] sm:max-w-[400px] lg:max-w-[500px]">
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:scale-110 transition-all duration-200"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
+              {theme === 'dark' ? <FaSun className="w-4 h-4 sm:w-5 sm:h-5" /> : <FaMoon className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
 
             {/* Search Field */}
-            <div ref={searchRef} className="relative w-full max-w-[200px] sm:max-w-[250px] md:max-w-[300px] lg:max-w-[350px] flex">
+            <div
+              ref={searchRef}
+              className="relative flex-1 min-w-[200px] max-w-[180px] xs:max-w-[220px] sm:max-w-[250px] md:max-w-[200px] lg:max-w-[350px]"
+            >
               <form onSubmit={handleSearch} className="relative w-full">
                 <div className="relative flex items-center">
                   <input
                     type="text"
-                    placeholder="Search "
-                    className="w-full px-4 py-2 pl-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm text-sm sm:text-base transition-all"
+                    placeholder="Search"
+                    className="w-full px-3 py-1.5 xs:px-4 xs:py-2 pl-8 xs:pl-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 ring-offset-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm text-xs xs:text-sm sm:text-base transition-all duration-200"
                     value={searchQuery}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -2692,18 +4861,18 @@ const Navbar = () => {
                       fetchData(value);
                     }}
                   />
-                  <Search className="absolute left-3 w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <Search className="absolute left-2 xs:left-3 top-1/2 -translate-y-1/2 w-3 h-3 xs:w-4 xs:h-4 text-gray-500 dark:text-gray-400" />
                   <button
                     type="submit"
-                    className="absolute right-1 flex items-center justify-center w-8 h-8 rounded-full text-white transition-colors duration-200"
+                    className="absolute right-1 xs:right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 xs:w-8 xs:h-8 rounded-full text-sky-500 hover:text-sky-600 transition-colors duration-200"
                     aria-label="Search stocks"
                   >
-                    <Search className="w-4 h-4" />
+                    <Search className="w-3 h-3 xs:w-4 xs:h-4" />
                   </button>
                 </div>
-                {error && <div className="absolute mt-1 text-xs text-red-600">{error}</div>}
+                {error && <div className="absolute mt-2 text-xs text-red-600">{error}</div>}
                 {results.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 overflow-y-auto">
                     <SearchList
                       results={results}
                       query={searchQuery}
@@ -2719,20 +4888,23 @@ const Navbar = () => {
             {isLoggedIn ? (
               <button
                 onClick={handleLogout}
-                className="hidden sm:flex bg-primary-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-sm sm:text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+                className="flex items-center gap-1 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 bg-sky-500 text-white rounded-full text-xs xs:text-sm sm:text-base font-medium hover:bg-sky-600 transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                Logout
+                <span className="hidden sm:inline">Logout</span>
+                <HiOutlineLogout className="inline w-4 h-4 xs:w-5 xs:h-5 sm:hidden" />
               </button>
             ) : (
-              <button
+              <Link
+                to="/login"
                 onClick={handleLoginClick}
-                className="hidden sm:flex bg-primary-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-sm sm:text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+                className="flex items-center gap-1 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-sky-600 to-cyan-600 text-white rounded-full text-xs xs:text-sm sm:text-base font-medium hover:bg-sky-600 transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                Login
-              </button>
+                <span className="hidden sm:inline">Login</span>
+                <CgLogIn className="inline w-4 h-4 xs:w-5 xs:h-5 sm:hidden" />
+              </Link>
             )}
 
-            {/* Profile Section */}
+            {/* Profile Section - Visible on all devices */}
             {isLoggedIn && (
               <div className="drawer drawer-end z-50" id="profile-section">
                 <input
@@ -2744,7 +4916,7 @@ const Navbar = () => {
                 <div className="drawer-content">
                   <label htmlFor="my-drawer-4" className="drawer-button cursor-pointer">
                     <div className="avatar">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-primary-500 overflow-hidden shadow-md">
+                      <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-sky-500 ring-offset-2 overflow-hidden shadow-md hover:scale-110 transition-all duration-200">
                         <img
                           src={profileImage || profile}
                           alt="Profile"
@@ -2758,80 +4930,80 @@ const Navbar = () => {
                   </label>
                 </div>
                 <div className="drawer-side">
-                  <label htmlFor="my-drawer-4" className="drawer-overlay bg-black/50"></label>
-                  <div className="menu w-full sm:w-80 min-h-full bg-white dark:bg-gray-800 p-4 sm:p-5 shadow-lg text-gray-800 dark:text-white">
-                    <div className="flex items-center gap-3 sm:gap-4 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-800 shadow-sm mb-4">
+                  <label htmlFor="my-drawer-4" className="drawer-overlay bg-black/60 backdrop-blur-sm"></label>
+                  <div className="menu w-80 min-h-full bg-white dark:bg-gray-800 p-6 shadow-2xl text-gray-800 dark:text-white rounded-l-xl">
+                    <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-800 shadow-md mb-6">
                       <div className="avatar">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-primary-400 overflow-hidden shadow-md">
-                         <ProfilePicture src={profileImage || profile}  />
+                        <div className="w-12 h-12 rounded-full border-2 border-sky-400 overflow-hidden shadow-lg">
+                          <ProfilePicture src={profileImage || profile} />
                         </div>
                       </div>
                       {userType && (
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Welcome back,</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">Welcome back,</p>
                           <Username userType={userType} setFullName={setFullName} />
                         </div>
                       )}
                     </div>
-                    <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
-                      <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+                    <div className="space-y-4">
+                      <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
                         <input type="checkbox" className="peer" ref={profileCollapseRef} />
-                        <div className="collapse-title flex gap-3 sm:gap-4 text-base sm:text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3">
-                          <AiFillProfile className="text-primary-500 mt-1" />
+                        <div className="collapse-title flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 transition-colors duration-200">
+                          <AiFillProfile className="text-sky-500 mt-1" />
                           View Profile
                         </div>
-                        <div className="collapse-content px-4 pb-3 text-sm sm:text-base">
+                        <div className="collapse-content px-4 pb-4 text-base bg-white/50 dark:bg-gray-800/50">
                           <Profile />
                         </div>
                       </div>
-                      <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+                      <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
                         <input type="checkbox" className="peer" ref={settingsCollapseRef} />
-                        <div className="collapse-title flex gap-3 sm:gap-4 text-base sm:text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3">
-                          <MdOutlineSettings className="text-primary-500 mt-1" />
+                        <div className="collapse-title flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 transition-colors duration-200">
+                          <MdOutlineSettings className="text-sky-500 mt-1" />
                           Settings
                         </div>
-                        <div className="collapse-content px-4 pb-3 text-sm sm:text-base">
+                        <div className="collapse-content px-4 pb-4 text-base bg-white/50 dark:bg-gray-800/50 space-y-2">
                           {userType === "individual" ? (
-                            <div className="border-b border-gray-200 dark:border-gray-600 flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer">
-                              <CgProfile className="text-primary-500 mt-1" />
+                            <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200">
+                              <CgProfile className="text-sky-500 mt-1" />
                               <Link
                                 to="/updateIndividualProfile"
-                                className="block py-1 hover:text-primary-500"
+                                className="block hover:text-sky-500"
                               >
                                 Update Profile
                               </Link>
                             </div>
                           ) : (
-                            <div className="border-b border-gray-200 dark:border-gray-600 flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer">
-                              <CgProfile className="text-primary-500 mt-1" />
+                            <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200">
+                              <CgProfile className="text-sky-500 mt-1" />
                               <Link
                                 to="/updateCorporateProfile"
-                                className="block py-1 hover:text-primary-500"
+                                className="block hover:text-sky-500"
                               >
                                 Update Corporate Profile
                               </Link>
                             </div>
                           )}
-                          <div className="border-b border-gray-200 dark:border-gray-600 flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer"
+                          <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200"
                             onClick={handleLogout}
                           >
-                            <HiOutlineLogout className="text-primary-500 mt-1" />
+                            <HiOutlineLogout className="text-sky-500 mt-1" />
                             <span className="tracking-wide">Logout</span>
                           </div>
-                          <div className="flex gap-3 sm:gap-4 text-sm sm:text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer"
+                          <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200"
                             onClick={() => setShowDeleteModal(true)}
                           >
-                            <MdDelete className="text-primary-500 mt-1" />
+                            <MdDelete className="text-sky-500 mt-1" />
                             <span className="tracking-wide">Delete Account</span>
                           </div>
                         </div>
                       </div>
-                      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg shadow-sm">
+                      <div className="bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
                         <div
-                          className="flex gap-3 sm:gap-4 text-base sm:text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-3 cursor-pointer"
+                          className="flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 cursor-pointer transition-colors duration-200"
                           onClick={handleOpenQuiz}
                         >
-                          <BsQuestionCircle className="text-primary-500 mt-1" />
+                          <BsQuestionCircle className="text-sky-500 mt-1" />
                           <span className="tracking-wide">Take Quiz</span>
                         </div>
                       </div>
@@ -2845,13 +5017,13 @@ const Navbar = () => {
             <div className="lg:hidden">
               <button
                 onClick={toggleMobileMenu}
-                className="btn btn-ghost text-gray-800 dark:text-white p-2"
+                className="p-2 rounded-full text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-110"
                 aria-label="Open menu"
               >
                 {isMobileMenuOpen ? (
-                  <FaTimes className="w-6 h-6" />
+                  <FaTimes className="w-5 h-5 xs:w-6 xs:h-6" />
                 ) : (
-                  <IoMdMenu className="w-6 h-6" />
+                  <IoMdMenu className="w-5 h-5 xs:w-6 xs:h-6" />
                 )}
               </button>
             </div>
@@ -2861,46 +5033,99 @@ const Navbar = () => {
         {/* Mobile Menu Content */}
         <div
           ref={mobileMenuRef}
-          className={`fixed inset-0 top-16 z-40 bg-white dark:bg-gray-800 lg:hidden transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          className={`fixed inset-0 top-[60px] xs:top-[68px] z-40 bg-white dark:bg-gray-900 lg:hidden transform transition-transform duration-500 ease-in-out overflow-y-auto shadow-2xl ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
             }`}
         >
-          <div className="p-4 overflow-y-auto h-full z-40 ">
-            <div className="mb-4">
-              <form onSubmit={handleSearch} className="relative">
-                <div className="relative flex items-center">
-                  <input
-                    type="text"
-                    placeholder="Search stocks..."
-                    className="w-full px-5 py-2 pl-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm text-sm"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setSearchQuery(value);
-                      fetchData(value);
-                    }}
-                  />
-                  <Search className="absolute left-3 w-4 h-4 text-gray-500 dark:text-gray-400" />
-                </div>
-                {error && <div className="mt-1 text-xs text-red-600">{error}</div>}
-                {results.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    <SearchList
-                      results={results}
-                      query={searchQuery}
-                      onSelectItem={handleSelectItem}
-                      onClear={handleClearSearch}
-                    />
+          <div className="p-6 space-y-6">
+            {/* Profile Section in Mobile Menu */}
+            {isLoggedIn && (
+              <div className="mb-6">
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-800 shadow-md">
+                  <div className="avatar">
+                    <div className="w-12 h-12 rounded-full border-2 border-sky-400 overflow-hidden shadow-lg">
+                      <ProfilePicture src={profileImage || profile} />
+                    </div>
                   </div>
-                )}
-              </form>
-            </div>
+                  {userType && (
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Welcome back,</p>
+                      <Username userType={userType} setFullName={setFullName} />
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 space-y-4">
+                  <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
+                    <input type="checkbox" className="peer" ref={profileCollapseRef} />
+                    <div className="collapse-title flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 transition-colors duration-200">
+                      <AiFillProfile className="text-sky-500 mt-1" />
+                      View Profile
+                    </div>
+                    <div className="collapse-content px-4 pb-4 text-base bg-white/50 dark:bg-gray-800/50">
+                      <Profile />
+                    </div>
+                  </div>
+                  <div className="collapse bg-gray-50 dark:bg-700 rounded-xl shadow-md overflow-hidden">
+                    <input type="checkbox" className="peer" ref={settingsCollapseRef} />
+                    <div className="collapse-title flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 transition-colors duration-200">
+                      <MdOutlineSettings className="text-sky-500 mt-1" />
+                      Settings
+                    </div>
+                    <div className="collapse-content px-4 pb-4 text-base bg-white/50 dark:bg-gray-800/50 space-y-2">
+                      {userType === "individual" ? (
+                        <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200">
+                          <CgProfile className="text-sky-500 mt-1" />
+                          <Link
+                            to="/updateIndividualProfile"
+                            className="block hover:text-sky-500"
+                          >
+                            Update Profile
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200">
+                          <CgProfile className="text-sky-500 mt-1" />
+                          <Link
+                            to="/updateCorporateProfile"
+                            className="block hover:text-sky-500"
+                          >
+                            Update Corporate Profile
+                          </Link>
+                        </div>
+                      )}
+                      <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200"
+                        onClick={handleLogout}
+                      >
+                        <HiOutlineLogout className="text-sky-500 mt-1" />
+                        <span className="tracking-wide">Logout</span>
+                      </div>
+                      <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200"
+                        onClick={() => setShowDeleteModal(true)}
+                      >
+                        <MdDelete className="text-sky-500 mt-1" />
+                        <span className="tracking-wide">Delete Account</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
+                    <div
+                      className="flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 cursor-pointer transition-colors duration-200"
+                      onClick={handleOpenQuiz}
+                    >
+                      <BsQuestionCircle className="text-sky-500 mt-1" />
+                      <span className="tracking-wide">Take Quiz</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <ul className="space-y-4">
               <li>
                 <Link
                   to="/"
                   onClick={() => handleNavClick("Home")}
-                  className={`block py-2 text-base ${isActive("/") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+                  className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+                    } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
                 >
                   Home
                 </Link>
@@ -2908,17 +5133,18 @@ const Navbar = () => {
               <li>
                 <details>
                   <summary
-                    className={`flex items-center justify-between py-2 text-base ${isActive("/portDash") ? "text-primary-500" : "text-gray-800 dark:text-white"} cursor-pointer`}
+                    className={`flex items-center justify-between py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/portDash") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+                      } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200 cursor-pointer`}
                   >
                     <span>Portfolio</span>
-                    <IoMdArrowDropdown className="text-lg" />
+                    <IoMdArrowDropdown className="text-xl" />
                   </summary>
-                  <ul className="pl-4 space-y-2 mt-2">
+                  <ul className="pl-6 space-y-2 mt-2">
                     <li>
                       <Link
                         to="/portDash"
                         onClick={() => handleNavClick("Upload File")}
-                        className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+                        className="block py-2 text-base text-gray-800 dark:text-white hover:text-sky-500 transition-colors duration-200"
                       >
                         Upload File
                       </Link>
@@ -2927,7 +5153,7 @@ const Navbar = () => {
                       <Link
                         to="/portDash/my-portfolio"
                         onClick={() => handleNavClick("Saved Portfolio")}
-                        className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+                        className="block py-2 text-base text-gray-800 dark:text-white hover:text-sky-500 transition-colors duration-200"
                       >
                         Saved Portfolio
                       </Link>
@@ -2936,7 +5162,7 @@ const Navbar = () => {
                       <Link
                         to="/portDash/resculpt-portfolio"
                         onClick={() => handleNavClick("Recreate Portfolio")}
-                        className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+                        className="block py-2 text-base text-gray-800 dark:text-white hover:text-sky-500 transition-colors duration-200"
                       >
                         Recreate Portfolio
                       </Link>
@@ -2945,7 +5171,7 @@ const Navbar = () => {
                       <Link
                         to="/portDash/customize-portfolio"
                         onClick={() => handleNavClick("Create own Portfolio")}
-                        className="block py-1 text-sm text-gray-800 dark:text-white hover:text-primary-500"
+                        className="block py-2 text-base text-gray-800 dark:text-white hover:text-sky-500 transition-colors duration-200"
                       >
                         BuildUrPortfolio
                       </Link>
@@ -2957,17 +5183,18 @@ const Navbar = () => {
                 <Link
                   to="/equityhub"
                   onClick={() => handleNavClick("Equity Hub")}
-                  className={`block py-2 text-base ${isActive("/equityhub") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+                  className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/equityhub") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+                    } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
                 >
                   Equity Insights
                 </Link>
               </li>
-
               <li>
                 <Link
-                  to="/dashboard"
+                  to="/researchPanel"
                   onClick={handleDashboardClick}
-                  className={`block py-2 text-base ${isActive("/dashboard") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+                  className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/researchPanel") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+                    } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
                 >
                   Research Panel
                 </Link>
@@ -2976,7 +5203,8 @@ const Navbar = () => {
                 <Link
                   to="/about"
                   onClick={() => handleNavClick("About")}
-                  className={`block py-2 text-base ${isActive("/about") ? "text-primary-500" : "text-gray-800 dark:text-white"}`}
+                  className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/about") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+                    } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
                 >
                   About
                 </Link>
@@ -2985,87 +5213,28 @@ const Navbar = () => {
                 <Link
                   to="/plan"
                   onClick={() => handleNavClick("Subscription")}
-                  className={`block py-2 text-base ${isActive('/plan') ? 'text-primary-500' : 'text-gray-800 dark:text-white'} hover:text-primary-500`}
+                  className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/plan") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+                    } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
                   data-tour="subscription-link"
                 >
                   Subscription
                 </Link>
               </li>
-              {isLoggedIn && (
-                <li>
-                  <button
-                    onClick={handleOpenQuiz}
-                    className="block w-full text-left py-2 text-base text-gray-800 dark:text-white hover:text-primary-500"
-                  >
-                    Take Quiz
-                  </button>
-                </li>
-              )}
-              <li className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={toggleTheme}
-                  className="flex items-center gap-2 text-gray-800 dark:text-white w-full py-2"
-                >
-                  {theme === 'dark' ? <FaSun className="w-5 h-5" /> : <FaMoon className="w-5 h-5" />}
-                  Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
-                </button>
-              </li>
-              <li className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                {isLoggedIn ? (
-                  <button
-                    onClick={handleLogout}
-                    className="w-full bg-primary-500 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
-                  >
-                    Logout
-                  </button>
-                ) : (
-                  <button
+              {!isLoggedIn && (
+                <li className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <Link
+                    to="/login"
                     onClick={handleLoginClick}
-                    className="w-full bg-primary-500 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-primary-600 transition-colors duration-200 shadow-sm"
+                    className="w-full bg-gradient-to-r from-sky-600 to-cyan-600 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-sky-600 transition-all duration-200 shadow-md hover:shadow-lg block text-center"
                   >
                     Login
-                  </button>
-                )}
-              </li>
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
         </div>
       </nav>
-
-      {/* Login Modal */}
-      {showLoginModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-          <div className="relative bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-[90%] sm:max-w-md shadow-xl">
-            <button
-              onClick={handleCloseModal}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              <svg
-                className="w-5 h-5 sm:w-6 sm:h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-            <Login
-              isOpen={showLoginModal}
-              onClose={handleCloseModal}
-              onSuccess={() => {
-                setIsLoggedIn(true);
-                handleCloseModal();
-                handleLoginSuccess();
-              }}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Quiz Modal */}
       <QuizModal
@@ -3078,41 +5247,36 @@ const Navbar = () => {
 
       {/* Delete Account Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-          <div className="relative bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-[90%] sm:max-w-md shadow-xl">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-md">
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl border border-gray-200/50 dark:border-gray-700/50">
             <button
               onClick={() => setShowDeleteModal(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:scale-110 transition-all duration-200"
             >
               <svg
-                className="w-5 h-5 sm:w-6 sm:h-6"
+                className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
             <div className="text-center">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">Confirm Account Deletion</h2>
-              <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Confirm Account Deletion</h2>
+              <p className="text-base text-gray-600 dark:text-gray-300 mb-6">
                 Are you sure you want to delete your account? This action cannot be undone.
               </p>
-              <div className="mt-4 sm:mt-6 flex justify-center gap-3 sm:gap-4">
+              <div className="flex justify-center gap-4">
                 <button
                   onClick={handleDeleteAccount}
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white rounded text-sm sm:text-base hover:bg-red-700 transition-colors"
+                  className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   Delete
                 </button>
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded text-sm sm:text-base hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+                  className="px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium hover:bg-gray-400 dark:hover:bg-gray-500 transition-all duration-200 shadow-md"
                 >
                   Cancel
                 </button>
@@ -3126,3 +5290,1052 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+
+
+
+
+// import React, { useEffect, useState, useRef } from "react";
+// import { logActivity, getProfilePicture } from "../services/api";
+// import { Link, useLocation, useNavigate } from "react-router-dom";
+// import { FaSun, FaMoon, FaTimes } from "react-icons/fa";
+// import { MdDelete, MdOutlineSettings } from "react-icons/md";
+// import { AiFillProfile } from "react-icons/ai";
+// import { BsQuestionCircle } from "react-icons/bs";
+// import Profile from "./Profile";
+// import UpdateIndividualProfile from "./UpdateIndividualProfile";
+// import UpdateCorporateProfile from "./UpdateCorporateProfile";
+// import Username from "./Username";
+// import ProfilePicture from "./ProfilePicture";
+// import profile from "../../public/profile.png";
+// import { CgLogIn, CgProfile } from "react-icons/cg";
+// import { HiOutlineLogout } from "react-icons/hi";
+// import toast from "react-hot-toast";
+// import { useAuth } from "./AuthContext";
+// import { Search } from "lucide-react";
+// import SearchList from "./EquityHub/SearchList";
+// import axios from "axios";
+// import { IoMdArrowDropdown, IoMdMenu } from "react-icons/io";
+// import QuizModal from "./QuizModal";
+// import JwtUtil from "../services/JwtUtil";
+
+// const Navbar = () => {
+//   const [isLoggedIn, setIsLoggedIn] = useState(false);
+//   const [profileImage, setProfileImage] = useState(null);
+//   const [sticky, setSticky] = useState(false);
+//   const [userType, setUserType] = useState(localStorage.getItem('userType') || 'individual');
+//   const [fullName, setFullName] = useState("");
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [results, setResults] = useState([]);
+//   const [error, setError] = useState(null);
+//   const [showQuizModal, setShowQuizModal] = useState(false);
+//   const [quizQuestions, setQuizQuestions] = useState([]);
+//   const [hasShownQuizPopup, setHasShownQuizPopup] = useState(false);
+//   const [showDeleteModal, setShowDeleteModal] = useState(false);
+//   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+//   const [isDisabled, setIsDisabled] = useState(true);
+//   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+//   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+//   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const { login, logout } = useAuth();
+
+//   const profileCollapseRef = useRef(null);
+//   const settingsCollapseRef = useRef(null);
+//   const quizCollapseRef = useRef(null);
+//   const mobileMenuRef = useRef(null);
+//   const searchRef = useRef(null);
+//   const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
+//   const CACHE_TTL = 60 * 60 * 1000;
+//   const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
+//   const TOKEN_CHECK_INTERVAL = 60 * 1000;
+
+//   let inactivityTimer;
+
+//   // Close mobile menu when clicking outside
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+//         setIsMobileMenuOpen(false);
+//       }
+//       if (searchRef.current && !searchRef.current.contains(event.target)) {
+//         setResults([]);
+//         setError(null);
+//       }
+//     };
+
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => {
+//       document.removeEventListener("mousedown", handleClickOutside);
+//     };
+//   }, []);
+
+//   // Theme effect
+//   useEffect(() => {
+//     if (theme === 'dark') {
+//       document.documentElement.classList.add('dark');
+//     } else {
+//       document.documentElement.classList.remove('dark');
+//     }
+//     localStorage.setItem('theme', theme);
+//   }, [theme]);
+
+//   const toggleTheme = () => {
+//     setTheme(theme === 'dark' ? 'light' : 'dark');
+//   };
+
+//   const resetInactivityTimer = () => {
+//     if (inactivityTimer) clearTimeout(inactivityTimer);
+//     if (isLoggedIn) inactivityTimer = setTimeout(handleLogout, INACTIVITY_TIMEOUT);
+//   };
+
+//   const handleLogout = async () => {
+//     const token = localStorage.getItem('authToken');
+//     const email = JwtUtil.extractEmail(token);
+
+//     if (!email) {
+//       toast.error("Missing user email. Cannot logout.");
+//       localStorage.removeItem('authToken');
+//       localStorage.removeItem('userType');
+//       localStorage.removeItem('userEmail');
+//       localStorage.removeItem('hasSeenQuizModal');
+//       localStorage.removeItem('hasTakenQuiz');
+//       logout();
+//       navigate('/');
+//       setIsLoggedIn(false);
+//       setHasShownQuizPopup(false);
+//       setShowQuizModal(false);
+//       setProfileImage(profile);
+//       return;
+//     }
+
+//     try {
+//       await axios.post(
+//         `${API_BASE}/auth/logout`,
+//         { email },
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             'Content-Type': 'application/json',
+//           },
+//         }
+//       );
+//       toast.success("Logout successful");
+//     } catch (error) {
+//       console.error(error.response?.data?.message || "Logout API failed");
+//     } finally {
+//       localStorage.removeItem('authToken');
+//       localStorage.removeItem('userType');
+//       localStorage.removeItem('userEmail');
+//       localStorage.removeItem('hasSeenQuizModal');
+//       localStorage.removeItem('hasTakenQuiz');
+//       logout();
+//       navigate('/');
+//       setIsLoggedIn(false);
+//       setHasShownQuizPopup(false);
+//       setShowQuizModal(false);
+//       setProfileImage(profile);
+//       setIsMobileMenuOpen(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     const checkTokenExpiration = () => {
+//       const token = localStorage.getItem('authToken');
+//       if (token && JwtUtil.isTokenExpired(token)) {
+//         toast.error("Session expired. Please log in again.");
+//         handleLogout();
+//       }
+//     };
+
+//     if (isLoggedIn) {
+//       checkTokenExpiration();
+//       const interval = setInterval(checkTokenExpiration, TOKEN_CHECK_INTERVAL);
+//       return () => clearInterval(interval);
+//     }
+//   }, [isLoggedIn]);
+
+//   useEffect(() => {
+//     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+//     const handleActivity = () => resetInactivityTimer();
+
+//     if (isLoggedIn) {
+//       resetInactivityTimer();
+//       events.forEach(event => window.addEventListener(event, handleActivity));
+//     }
+
+//     return () => {
+//       if (inactivityTimer) clearTimeout(inactivityTimer);
+//       events.forEach(event => window.removeEventListener(event, handleActivity));
+//     };
+//   }, [isLoggedIn]);
+
+//   useEffect(() => {
+//     const fetchQuestions = async () => {
+//       try {
+//         const res = await axios.get(`${API_BASE}/assessment/questions`);
+//         if (res.status === 200) setQuizQuestions(res.data);
+//       } catch (error) {
+//         console.error("Failed to fetch quiz questions", error);
+//         toast.error("Failed to load quiz questions");
+//       }
+//     };
+//     fetchQuestions();
+//   }, []);
+
+//   const handlePortfolioClick = (e) => {
+//     e.preventDefault();
+//     setIsPortfolioOpen(true);
+//     handleNavClick("Portfolio");
+//     navigate("/portDash");
+//   };
+
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (!event.target.closest("#portfolio-dropdown")) setIsPortfolioOpen(false);
+//     };
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => document.removeEventListener("mousedown", handleClickOutside);
+//   }, []);
+
+//   useEffect(() => {
+//     const handleScroll = () => setSticky(window.scrollY > 0);
+//     window.addEventListener("scroll", handleScroll);
+//     return () => window.removeEventListener("scroll", handleScroll);
+//   }, []);
+
+//   const fetchProfileImage = async () => {
+//     try {
+//       const url = await getProfilePicture();
+//       setProfileImage(url ? `${url}?t=${Date.now()}` : profile);
+//     } catch (error) {
+//       console.error("Failed to fetch profile picture:", error);
+//       setProfileImage(profile);
+//       toast.error("Failed to load profile picture");
+//     }
+//   };
+
+//   useEffect(() => {
+//     const storedUserType = localStorage.getItem("userType") || "individual";
+//     setUserType(storedUserType);
+
+//     const token = localStorage.getItem("authToken");
+//     const isCurrentlyLoggedIn = !!token && !JwtUtil.isTokenExpired(token);
+//     setIsLoggedIn(isCurrentlyLoggedIn);
+
+//     if (isCurrentlyLoggedIn) fetchProfileImage();
+//     else setProfileImage(profile);
+//   }, [isLoggedIn]);
+
+//   const fetchName = async () => {
+//     const token = localStorage.getItem('authToken');
+//     if (!token) return;
+
+//     const email = JwtUtil.extractEmail(token);
+//     if (!email) return;
+
+//     try {
+//       const url = userType === 'corporate' ? `/corporate/${email}` : `/Userprofile/${email}`;
+//       const response = await axios.get(`${API_BASE}${url}`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+
+//       const name = userType === 'corporate' ? response.data.employeeName : response.data.fullname || response.data.fullName;
+//       setFullName(name);
+//     } catch (error) {
+//       console.error('Failed to fetch user name:', error);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchName();
+
+//     const syncName = () => {
+//       setUserType(localStorage.getItem('userType') || 'individual');
+//       fetchName();
+//     };
+
+//     window.addEventListener('authChange', syncName);
+//     window.addEventListener('storage', syncName);
+
+//     return () => {
+//       window.removeEventListener('authChange', syncName);
+//       window.removeEventListener('storage', syncName);
+//     };
+//   }, []);
+
+//   useEffect(() => {
+//     const token = localStorage.getItem("authToken");
+//     const isCurrentlyLoggedIn = !!token && !JwtUtil.isTokenExpired(token);
+//     setIsLoggedIn(isCurrentlyLoggedIn);
+
+//     if (isCurrentlyLoggedIn && !localStorage.getItem("hasTakenQuiz")) {
+//       const hasSeenQuizModal = localStorage.getItem("hasSeenQuizModal") === "true";
+//       if (!hasShownQuizPopup && !hasSeenQuizModal) {
+//         const timer = setTimeout(() => {
+//           setShowQuizModal(true);
+//           setHasShownQuizPopup(true);
+//         }, 3000);
+//         return () => clearTimeout(timer);
+//       }
+//     }
+//   }, [isLoggedIn, hasShownQuizPopup]);
+
+//   const handleDeleteAccount = async () => {
+//     const apiUrl = userType === "corporate" ? `${API_BASE}/corporate/delete-account` : `${API_BASE}/Userprofile/delete-account`;
+
+//     try {
+//       await axios.delete(apiUrl, {
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+//           "Content-Type": "application/json",
+//         },
+//       });
+//       toast.success("Account deleted successfully");
+//       localStorage.removeItem("authToken");
+//       localStorage.removeItem("userType");
+//       localStorage.removeItem("hasSeenQuizModal");
+//       localStorage.removeItem("hasTakenQuiz");
+//       logout();
+//       navigate("/");
+//       setShowDeleteModal(false);
+//       setProfileImage(profile);
+//       setIsMobileMenuOpen(false);
+//     } catch (err) {
+//       toast.error(err.response?.data?.message || "Failed to delete account");
+//     }
+//   };
+
+//   const handleNavClick = async (label) => {
+//     await logActivity(`${label} tab clicked`);
+//     setIsMobileMenuOpen(false);
+//   };
+
+//   const isActive = (path) => location.pathname === path;
+
+//   const handleDashboardClick = (e) => {
+//     if (!isLoggedIn) {
+//       e.preventDefault();
+//       toast.error("Please login to access the Dashboard");
+//     } else {
+//       handleNavClick("Dashboard");
+//     }
+//   };
+
+//   const getCachedData = (key) => {
+//     const cached = localStorage.getItem(key);
+//     if (!cached) return null;
+//     try {
+//       const { data, timestamp } = JSON.parse(cached);
+//       if (Date.now() - timestamp > CACHE_TTL) {
+//         localStorage.removeItem(key);
+//         return null;
+//       }
+//       return data;
+//     } catch (err) {
+//       setError("Failed to parse cached data.");
+//       console.error("Cache parse error:", err);
+//       return null;
+//     }
+//   };
+
+//   const setCachedData = (key, data) => {
+//     try {
+//       localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+//     } catch (err) {
+//       setError("Failed to cache data.");
+//       console.error("Cache set error:", err);
+//     }
+//   };
+
+//   const fetchData = async (value) => {
+//     if (!value || value.length < 2) {
+//       setResults([]);
+//       setError(null);
+//       return;
+//     }
+
+//     const cacheKey = `search_${value.toLowerCase()}`;
+//     const cachedResults = getCachedData(cacheKey);
+//     if (cachedResults) {
+//       setResults(cachedResults);
+//       return;
+//     }
+
+//     try {
+//       const response = await axios.get(`${API_BASE}/stocks/test/suggest`, {
+//         params: { prefix: value },
+//       });
+//       const filteredResults = response.data.filter((symbol) =>
+//         symbol?.symbol?.toLowerCase().includes(value.toLowerCase())
+//       );
+//       if (filteredResults.length === 0) {
+//         setError("No matching stocks found.");
+//       } else {
+//         setResults(filteredResults);
+//         setCachedData(cacheKey, filteredResults);
+//         setError(null);
+//       }
+//     } catch (error) {
+//       setError(error.response?.data?.error || error.message || "Failed to fetch search results.");
+//       setResults([]);
+//     }
+//   };
+
+//   const handleSearch = (e) => {
+//     e.preventDefault();
+//     if (searchQuery.trim()) {
+//       navigate(`/equityhub?query=${encodeURIComponent(searchQuery)}`);
+//       setSearchQuery("");
+//       setResults([]);
+//       setError(null);
+//       setIsMobileMenuOpen(false);
+//     }
+//   };
+
+//   const handleSelectItem = (item) => {
+//     if (item && item.symbol) {
+//       setSearchQuery("");
+//       setResults([]);
+//       setError(null);
+//       navigate(`/equityhub?query=${encodeURIComponent(item.symbol)}`);
+//       setIsMobileMenuOpen(false);
+//     }
+//   };
+
+//   const handleClearSearch = () => {
+//     setSearchQuery("");
+//     setResults([]);
+//     setError(null);
+//   };
+
+//   const handleLoginClick = () => {
+//     // Pass the current pathname to the login page
+//     navigate("/login", { state: { from: location.pathname } });
+//     setIsMobileMenuOpen(false);
+//   };
+
+//   const handleLoginSuccess = () => {
+//     login();
+//     setIsLoggedIn(true);
+//     localStorage.removeItem("hasSeenQuizModal");
+//     localStorage.removeItem("hasTakenQuiz");
+//     setHasShownQuizPopup(false);
+//     fetchProfileImage();
+//   };
+
+//   const handleOpenQuiz = () => {
+//     setShowQuizModal(true);
+//     setIsMobileMenuOpen(false);
+//   };
+
+//   const handleDrawerToggle = (e) => {
+//     const isChecked = e.target.checked;
+//     setIsDrawerOpen(isChecked);
+//     if (isChecked) {
+//       if (profileCollapseRef.current) profileCollapseRef.current.checked = false;
+//       if (settingsCollapseRef.current) settingsCollapseRef.current.checked = false;
+//       if (quizCollapseRef.current) quizCollapseRef.current.checked = false;
+//     }
+//   };
+
+//   const toggleMobileMenu = () => {
+//     setIsMobileMenuOpen(!isMobileMenuOpen);
+//   };
+
+//   const navItems = (
+//     <ul className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-6">
+//       <li>
+//         <Link
+//           to="/"
+//           onClick={() => handleNavClick("Home")}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/") ? "text-sky-500 underline underline-offset-8 font-bold" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Home
+//         </Link>
+//       </li>
+//       <li
+//         id="portfolio-dropdown"
+//         className="relative"
+//         onMouseEnter={() => setIsPortfolioOpen(true)}
+//         onMouseLeave={() => setIsPortfolioOpen(false)}
+//       >
+//         <span
+//           onClick={handlePortfolioClick}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out cursor-pointer 
+//             ${isActive("/portDash") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Portfolio
+//         </span>
+//         {isPortfolioOpen && (
+//           <ul
+//             className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-2 z-10 lg:mt-0 border border-gray-200 dark:border-gray-700"
+//             onMouseEnter={() => setIsPortfolioOpen(true)}
+//             onMouseLeave={() => setIsPortfolioOpen(false)}
+//           >
+//             <li>
+//               <Link
+//                 to="/portDash"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sky-500 transition-colors duration-200"
+//               >
+//                 Upload File
+//               </Link>
+//               <Link
+//                 to="/portDash/my-portfolio"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sky-500 transition-colors duration-200"
+//               >
+//                 Saved Portfolio
+//               </Link>
+//             </li>
+//             <li>
+//               <Link
+//                 to="/portDash/resculpt-portfolio"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sky-500 transition-colors duration-200"
+//               >
+//                 Recreate Portfolio
+//               </Link>
+//             </li>
+//             <li>
+//               <Link
+//                 to="/portDash/customize-portfolio"
+//                 onClick={() => setIsPortfolioOpen(false)}
+//                 className="block px-4 py-2 text-sm text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-sky-500 transition-colors duration-200"
+//               >
+//                 Create own Portfolio
+//               </Link>
+//             </li>
+//           </ul>
+//         )}
+//       </li>
+//       <li>
+//         <Link
+//           to="/equityhub"
+//           onClick={() => handleNavClick("Equity Hub")}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/equityhub") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Equity Insights
+//         </Link>
+//       </li>
+//       <li>
+//         <Link
+//           to="/researchPanel"
+//           onClick={handleDashboardClick}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/researchPanel") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           Research Panel
+//         </Link>
+//       </li>
+//       <li>
+//         <Link
+//           to="/about"
+//           onClick={() => handleNavClick("About")}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive("/about") ? "text-sky-500 underline underline-offset-8" : "text-gray-800 dark:text-white"} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//         >
+//           About
+//         </Link>
+//       </li>
+//       <li className={isDisabled ? "opacity-50 pointer-events-none" : ""}>
+//         <Link
+//           to="/plan"
+//           onClick={(e) => {
+//             if (isDisabled) {
+//               e.preventDefault();
+//               return;
+//             }
+//             handleNavClick("Subscription");
+//           }}
+//           className={`text-base font-medium transition-all duration-300 ease-in-out 
+//             ${isActive('/plan') ? 'text-sky-500 underline underline-offset-8' : 'text-gray-800 dark:text-white'} 
+//             hover:text-sky-600 hover:underline hover:underline-offset-8 lg:text-lg`}
+//           data-tour="subscription-link"
+//         >
+//           Subscription
+//         </Link>
+//       </li>
+//     </ul>
+//   );
+
+//   return (
+//     <>
+//       <nav
+//         className={`fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 md:px-8 lg:px-10 py-3 transition-all duration-300 ${sticky
+//           ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg shadow-lg border-b border-gray-200/50 dark:border-gray-700/50"
+//           : "bg-transparent shadow-md"
+//           }`}
+//       >
+//         <div className="max-w-screen-2xl mx-auto flex flex-wrap justify-between items-center gap-y-4">
+//           {/* Desktop Navigation */}
+//           <div className="hidden lg:flex lg:items-center">{navItems}</div>
+
+//           {/* Right Side Items */}
+//           <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+//             {/* Theme Toggle */}
+//             <button
+//               onClick={toggleTheme}
+//               className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:scale-110 transition-all duration-200"
+//               aria-label="Toggle theme"
+//             >
+//               {theme === 'dark' ? <FaSun className="w-4 h-4 sm:w-5 sm:h-5" /> : <FaMoon className="w-4 h-4 sm:w-5 sm:h-5" />}
+//             </button>
+
+//             {/* Search Field */}
+//             <div
+//               ref={searchRef}
+//               className="relative flex-1 min-w-[200px] max-w-[180px] xs:max-w-[220px] sm:max-w-[250px] md:max-w-[200px] lg:max-w-[350px]"
+//             >
+//               <form onSubmit={handleSearch} className="relative w-full">
+//                 <div className="relative flex items-center">
+//                   <input
+//                     type="text"
+//                     placeholder="Search"
+//                     className="w-full px-3 py-1.5 xs:px-4 xs:py-2 pl-8 xs:pl-10 rounded-full border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 ring-offset-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm text-xs xs:text-sm sm:text-base transition-all duration-200"
+//                     value={searchQuery}
+//                     onChange={(e) => {
+//                       const value = e.target.value;
+//                       setSearchQuery(value);
+//                       fetchData(value);
+//                     }}
+//                   />
+//                   <Search className="absolute left-2 xs:left-3 top-1/2 -translate-y-1/2 w-3 h-3 xs:w-4 xs:h-4 text-gray-500 dark:text-gray-400" />
+//                   <button
+//                     type="submit"
+//                     className="absolute right-1 xs:right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 xs:w-8 xs:h-8 rounded-full text-sky-500 hover:text-sky-600 transition-colors duration-200"
+//                     aria-label="Search stocks"
+//                   >
+//                     <Search className="w-3 h-3 xs:w-4 xs:h-4" />
+//                   </button>
+//                 </div>
+//                 {error && <div className="absolute mt-2 text-xs text-red-600">{error}</div>}
+//                 {results.length > 0 && (
+//                   <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+//                     <SearchList
+//                       results={results}
+//                       query={searchQuery}
+//                       onSelectItem={handleSelectItem}
+//                       onClear={handleClearSearch}
+//                     />
+//                   </div>
+//                 )}
+//               </form>
+//             </div>
+
+//             {/* Login/Logout Button */}
+//             {isLoggedIn ? (
+//               <button
+//                 onClick={handleLogout}
+//                 className="flex items-center gap-1 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 bg-sky-500 text-white rounded-full text-xs xs:text-sm sm:text-base font-medium hover:bg-sky-600 transition-all duration-200 shadow-md hover:shadow-lg"
+//               >
+//                 <span className="hidden sm:inline">Logout</span>
+//                 <HiOutlineLogout className="inline w-4 h-4 xs:w-5 xs:h-5 sm:hidden" />
+//               </button>
+//             ) : (
+//               <Link
+//                 to="/login"
+//                 onClick={handleLoginClick}
+//                 className="flex items-center gap-1 px-2 py-1 xs:px-3 xs:py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-sky-600 to-cyan-600 text-white rounded-full text-xs xs:text-sm sm:text-base font-medium hover:bg-sky-600 transition-all duration-200 shadow-md hover:shadow-lg"
+//               >
+//                 <span className="hidden sm:inline">Login</span>
+//                 <CgLogIn className="inline w-4 h-4 xs:w-5 xs:h-5 sm:hidden" />
+//               </Link>
+//             )}
+
+//             {/* Profile Section - Visible on all devices */}
+//             {isLoggedIn && (
+//               <div className="drawer drawer-end z-50" id="profile-section">
+//                 <input
+//                   id="my-drawer-4"
+//                   type="checkbox"
+//                   className="drawer-toggle"
+//                   onChange={handleDrawerToggle}
+//                 />
+//                 <div className="drawer-content">
+//                   <label htmlFor="my-drawer-4" className="drawer-button cursor-pointer">
+//                     <div className="avatar">
+//                       <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-sky-500 ring-offset-2 overflow-hidden shadow-md hover:scale-110 transition-all duration-200">
+//                         <img
+//                           src={profileImage || profile}
+//                           alt="Profile"
+//                           className="w-full h-full object-cover"
+//                           onError={(e) => {
+//                             e.target.src = profile; // Fallback on error
+//                           }}
+//                         />
+//                       </div>
+//                     </div>
+//                   </label>
+//                 </div>
+//                 <div className="drawer-side">
+//                   <label htmlFor="my-drawer-4" className="drawer-overlay bg-black/60 backdrop-blur-sm"></label>
+//                   <div className="menu w-80 min-h-full bg-white dark:bg-gray-800 p-6 shadow-2xl text-gray-800 dark:text-white rounded-l-xl">
+//                     <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-800 shadow-md mb-6">
+//                       <div className="avatar">
+//                         <div className="w-12 h-12 rounded-full border-2 border-sky-400 overflow-hidden shadow-lg">
+//                           <ProfilePicture src={profileImage || profile} />
+//                         </div>
+//                       </div>
+//                       {userType && (
+//                         <div>
+//                           <p className="text-sm text-gray-500 dark:text-gray-400">Welcome back,</p>
+//                           <Username userType={userType} setFullName={setFullName} />
+//                         </div>
+//                       )}
+//                     </div>
+//                     <div className="space-y-4">
+//                       <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
+//                         <input type="checkbox" className="peer" ref={profileCollapseRef} />
+//                         <div className="collapse-title flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 transition-colors duration-200">
+//                           <AiFillProfile className="text-sky-500 mt-1" />
+//                           View Profile
+//                         </div>
+//                         <div className="collapse-content px-4 pb-4 text-base bg-white/50 dark:bg-gray-800/50">
+//                           <Profile />
+//                         </div>
+//                       </div>
+//                       <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
+//                         <input type="checkbox" className="peer" ref={settingsCollapseRef} />
+//                         <div className="collapse-title flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 transition-colors duration-200">
+//                           <MdOutlineSettings className="text-sky-500 mt-1" />
+//                           Settings
+//                         </div>
+//                         <div className="collapse-content px-4 pb-4 text-base bg-white/50 dark:bg-gray-800/50 space-y-2">
+//                           {userType === "individual" ? (
+//                             <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200">
+//                               <CgProfile className="text-sky-500 mt-1" />
+//                               <Link
+//                                 to="/updateIndividualProfile"
+//                                 className="block hover:text-sky-500"
+//                               >
+//                                 Update Profile
+//                               </Link>
+//                             </div>
+//                           ) : (
+//                             <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200">
+//                               <CgProfile className="text-sky-500 mt-1" />
+//                               <Link
+//                                 to="/updateCorporateProfile"
+//                                 className="block hover:text-sky-500"
+//                               >
+//                                 Update Corporate Profile
+//                               </Link>
+//                             </div>
+//                           )}
+//                           <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200"
+//                             onClick={handleLogout}
+//                           >
+//                             <HiOutlineLogout className="text-sky-500 mt-1" />
+//                             <span className="tracking-wide">Logout</span>
+//                           </div>
+//                           <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200"
+//                             onClick={() => setShowDeleteModal(true)}
+//                           >
+//                             <MdDelete className="text-sky-500 mt-1" />
+//                             <span className="tracking-wide">Delete Account</span>
+//                           </div>
+//                         </div>
+//                       </div>
+//                       <div className="bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
+//                         <div
+//                           className="flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 cursor-pointer transition-colors duration-200"
+//                           onClick={handleOpenQuiz}
+//                         >
+//                           <BsQuestionCircle className="text-sky-500 mt-1" />
+//                           <span className="tracking-wide">Take Quiz</span>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             )}
+
+//             {/* Mobile Menu Button */}
+//             <div className="lg:hidden">
+//               <button
+//                 onClick={toggleMobileMenu}
+//                 className="p-2 rounded-full text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-110"
+//                 aria-label="Open menu"
+//               >
+//                 {isMobileMenuOpen ? (
+//                   <FaTimes className="w-5 h-5 xs:w-6 xs:h-6" />
+//                 ) : (
+//                   <IoMdMenu className="w-5 h-5 xs:w-6 xs:h-6" />
+//                 )}
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Mobile Menu Content */}
+//         <div
+//           ref={mobileMenuRef}
+//           className={`fixed inset-0 top-[60px] xs:top-[68px] z-40 bg-white dark:bg-gray-900 lg:hidden transform transition-transform duration-500 ease-in-out overflow-y-auto shadow-2xl ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+//             }`}
+//         >
+//           <div className="p-6 space-y-6">
+//             {/* Profile Section in Mobile Menu */}
+//             {isLoggedIn && (
+//               <div className="mb-6">
+//                 <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-700 dark:to-gray-800 shadow-md">
+//                   <div className="avatar">
+//                     <div className="w-12 h-12 rounded-full border-2 border-sky-400 overflow-hidden shadow-lg">
+//                       <ProfilePicture src={profileImage || profile} />
+//                     </div>
+//                   </div>
+//                   {userType && (
+//                     <div>
+//                       <p className="text-sm text-gray-500 dark:text-gray-400">Welcome back,</p>
+//                       <Username userType={userType} setFullName={setFullName} />
+//                     </div>
+//                   )}
+//                 </div>
+//                 <div className="mt-4 space-y-4">
+//                   <div className="collapse bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
+//                     <input type="checkbox" className="peer" ref={profileCollapseRef} />
+//                     <div className="collapse-title flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 transition-colors duration-200">
+//                       <AiFillProfile className="text-sky-500 mt-1" />
+//                       View Profile
+//                     </div>
+//                     <div className="collapse-content px-4 pb-4 text-base bg-white/50 dark:bg-gray-800/50">
+//                       <Profile />
+//                     </div>
+//                   </div>
+//                   <div className="collapse bg-gray-50 dark:bg-700 rounded-xl shadow-md overflow-hidden">
+//                     <input type="checkbox" className="peer" ref={settingsCollapseRef} />
+//                     <div className="collapse-title flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 transition-colors duration-200">
+//                       <MdOutlineSettings className="text-sky-500 mt-1" />
+//                       Settings
+//                     </div>
+//                     <div className="collapse-content px-4 pb-4 text-base bg-white/50 dark:bg-gray-800/50 space-y-2">
+//                       {userType === "individual" ? (
+//                         <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200">
+//                           <CgProfile className="text-sky-500 mt-1" />
+//                           <Link
+//                             to="/updateIndividualProfile"
+//                             className="block hover:text-sky-500"
+//                           >
+//                             Update Profile
+//                           </Link>
+//                         </div>
+//                       ) : (
+//                         <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200">
+//                           <CgProfile className="text-sky-500 mt-1" />
+//                           <Link
+//                             to="/updateCorporateProfile"
+//                             className="block hover:text-sky-500"
+//                           >
+//                             Update Corporate Profile
+//                           </Link>
+//                         </div>
+//                       )}
+//                       <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200"
+//                         onClick={handleLogout}
+//                       >
+//                         <HiOutlineLogout className="text-sky-500 mt-1" />
+//                         <span className="tracking-wide">Logout</span>
+//                       </div>
+//                       <div className="flex gap-4 text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md p-3 cursor-pointer transition-colors duration-200"
+//                         onClick={() => setShowDeleteModal(true)}
+//                       >
+//                         <MdDelete className="text-sky-500 mt-1" />
+//                         <span className="tracking-wide">Delete Account</span>
+//                       </div>
+//                     </div>
+//                   </div>
+//                   <div className="bg-gray-50 dark:bg-gray-700 rounded-xl shadow-md overflow-hidden">
+//                     <div
+//                       className="flex gap-4 text-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-600 p-4 cursor-pointer transition-colors duration-200"
+//                       onClick={handleOpenQuiz}
+//                     >
+//                       <BsQuestionCircle className="text-sky-500 mt-1" />
+//                       <span className="tracking-wide">Take Quiz</span>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//             )}
+
+//             <ul className="space-y-4">
+//               <li>
+//                 <Link
+//                   to="/"
+//                   onClick={() => handleNavClick("Home")}
+//                   className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+//                     } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
+//                 >
+//                   Home
+//                 </Link>
+//               </li>
+//               <li>
+//                 <details>
+//                   <summary
+//                     className={`flex items-center justify-between py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/portDash") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+//                       } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200 cursor-pointer`}
+//                   >
+//                     <span>Portfolio</span>
+//                     <IoMdArrowDropdown className="text-xl" />
+//                   </summary>
+//                   <ul className="pl-6 space-y-2 mt-2">
+//                     <li>
+//                       <Link
+//                         to="/portDash"
+//                         onClick={() => handleNavClick("Upload File")}
+//                         className="block py-2 text-base text-gray-800 dark:text-white hover:text-sky-500 transition-colors duration-200"
+//                       >
+//                         Upload File
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <Link
+//                         to="/portDash/my-portfolio"
+//                         onClick={() => handleNavClick("Saved Portfolio")}
+//                         className="block py-2 text-base text-gray-800 dark:text-white hover:text-sky-500 transition-colors duration-200"
+//                       >
+//                         Saved Portfolio
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <Link
+//                         to="/portDash/resculpt-portfolio"
+//                         onClick={() => handleNavClick("Recreate Portfolio")}
+//                         className="block py-2 text-base text-gray-800 dark:text-white hover:text-sky-500 transition-colors duration-200"
+//                       >
+//                         Recreate Portfolio
+//                       </Link>
+//                     </li>
+//                     <li>
+//                       <Link
+//                         to="/portDash/customize-portfolio"
+//                         onClick={() => handleNavClick("Create own Portfolio")}
+//                         className="block py-2 text-base text-gray-800 dark:text-white hover:text-sky-500 transition-colors duration-200"
+//                       >
+//                         BuildUrPortfolio
+//                       </Link>
+//                     </li>
+//                   </ul>
+//                 </details>
+//               </li>
+//               <li>
+//                 <Link
+//                   to="/equityhub"
+//                   onClick={() => handleNavClick("Equity Hub")}
+//                   className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/equityhub") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+//                     } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
+//                 >
+//                   Equity Insights
+//                 </Link>
+//               </li>
+//               <li>
+//                 <Link
+//                   to="/researchPanel"
+//                   onClick={handleDashboardClick}
+//                   className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/researchPanel") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+//                     } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
+//                 >
+//                   Research Panel
+//                 </Link>
+//               </li>
+//               <li>
+//                 <Link
+//                   to="/about"
+//                   onClick={() => handleNavClick("About")}
+//                   className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/about") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+//                     } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
+//                 >
+//                   About
+//                 </Link>
+//               </li>
+//               <li className={isDisabled ? "opacity-50 pointer-events-none" : ""}>
+//                 <Link
+//                   to="/plan"
+//                   onClick={() => handleNavClick("Subscription")}
+//                   className={`block py-3 px-4 rounded-lg text-lg font-semibold ${isActive("/plan") ? "bg-sky-100 dark:bg-sky-900 text-sky-500" : "text-gray-800 dark:text-white"
+//                     } hover:bg-sky-50 dark:hover:bg-sky-800 hover:text-sky-600 transition-all duration-200`}
+//                   data-tour="subscription-link"
+//                 >
+//                   Subscription
+//                 </Link>
+//               </li>
+//               {!isLoggedIn && (
+//                 <li className="pt-4 border-t border-gray-200 dark:border-gray-700">
+//                   <Link
+//                     to="/login"
+//                     onClick={handleLoginClick}
+//                     className="w-full bg-gradient-to-r from-sky-600 to-cyan-600 text-white px-4 py-2 rounded-full text-base font-medium hover:bg-sky-600 transition-all duration-200 shadow-md hover:shadow-lg block text-center"
+//                   >
+//                     Login
+//                   </Link>
+//                 </li>
+//               )}
+//             </ul>
+//           </div>
+//         </div>
+//       </nav>
+
+//       {/* Quiz Modal */}
+//       <QuizModal
+//         showModal={showQuizModal}
+//         setShowModal={setShowQuizModal}
+//         allQuestions={quizQuestions}
+//         userId={localStorage.getItem("userId") || null}
+//         onLoginClick={handleLoginClick}
+//       />
+
+//       {/* Delete Account Modal */}
+//       {showDeleteModal && (
+//         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-md">
+//           <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl border border-gray-200/50 dark:border-gray-700/50">
+//             <button
+//               onClick={() => setShowDeleteModal(false)}
+//               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:scale-110 transition-all duration-200"
+//             >
+//               <svg
+//                 className="w-6 h-6"
+//                 fill="none"
+//                 stroke="currentColor"
+//                 viewBox="0 0 24 24"
+//               >
+//                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+//               </svg>
+//             </button>
+//             <div className="text-center">
+//               <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Confirm Account Deletion</h2>
+//               <p className="text-base text-gray-600 dark:text-gray-300 mb-6">
+//                 Are you sure you want to delete your account? This action cannot be undone.
+//               </p>
+//               <div className="flex justify-center gap-4">
+//                 <button
+//                   onClick={handleDeleteAccount}
+//                   className="px-6 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg"
+//                 >
+//                   Delete
+//                 </button>
+//                 <button
+//                   onClick={() => setShowDeleteModal(false)}
+//                   className="px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium hover:bg-gray-400 dark:hover:bg-gray-500 transition-all duration-200 shadow-md"
+//                 >
+//                   Cancel
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </>
+//   );
+// };
+
+// export default Navbar;

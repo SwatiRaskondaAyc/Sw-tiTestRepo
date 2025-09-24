@@ -425,30 +425,30 @@ const SectorDetails = ({ sector, isOpen, onClose }) => {
                     </button>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 dark:bg-slate-800 dark:text-white ">
 
-                    <div className="bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700 ">
+                    <div className="bg-white dark:bg-slate-800 p-4 border-b border-gray-200 dark:border-gray-700 ">
                         <div className='p-5 bg-gray-100 '>
                             <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Market Cap:</span>
+                                <span className="text-gray-600 dark:text-white">Market Cap:</span>
                                 <span className="font-medium text-gray-900 dark:text-gray-100">
                                     {sector.SectorMarketCap ? `₹${(sector.SectorMarketCap / 1e7).toLocaleString('en-IN', { minimumFractionDigits: 2 })}cr` : 'N/A'}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">1Y Growth:</span>
+                                <span className="text-gray-600 dark:text-white">1Y Growth:</span>
                                 <span className={`font-medium ${sector.SectorCAGR_1Y_MCap >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                     {sector.SectorCAGR_1Y_MCap ? `${(sector.SectorCAGR_1Y_MCap * 100).toFixed(2)}%` : 'N/A'}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">PE Ratio:</span>
+                                <span className="text-gray-600 dark:text-white">PE Ratio:</span>
                                 <span className="font-medium text-gray-900 dark:text-gray-100">
                                     {sector.SectorPE_Mode ? sector.SectorPE_Mode.toFixed(2) : 'N/A'}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Total Companies:</span>
+                                <span className="text-gray-600 dark:text-white">Total Companies:</span>
                                 <span className="font-medium text-gray-900 dark:text-gray-100">{sector.TotalCompanies}</span>
                             </div>
                         </div>

@@ -3248,11 +3248,419 @@
 // };
 
 // export default GraphSlider;
+// -----------------wc-------------------------
+
+// import React, { useEffect, useState, useRef } from 'react';
+// import Slider from 'react-slick';
+// // import { useAuth } from './AuthContext';
+// import CandleBreach from './CandleBreach';
+// import LastTraded from './LastTraded';
+// import AvgBoxPlots from './AvgBoxPlots';
+// import WormsPlots from './WormsPlots';
+// import SensexStockCorrBar from './SensexVsStockCorrBar';
+// import SensexVsStockCorr from './SensexVsStockCorr';
+// import HeatMap from './HeatMap';
+// import DelRate from './DelRate';
+// import VoltyPlot from './VoltyPlot';
+// import IndustryBubble from './IndustryBubble';
+// // import TechnicalPlot from './TechnicalPlot';
+// import toast from 'react-hot-toast';
+// import SensexCalculator from './SensexCalculator';
+// import MacdPlot from './MacdPlot';
+// import CandleSpread from './CandleSpreadDistribution';
+// import Login from '../Login';
+// import PublicTradingActivityPlot from './PublicTradingActivityPlot';
+
+// import { FaArrowLeft, FaArrowRight, FaChartLine, FaUserLock, FaUserTie } from 'react-icons/fa';
+// import candle_spread from '/public/assets/gaph1.png';
+// import Industry_Bubble from '/public/assets/graph13.png';
+// import Sensex_Calculator from '/public/assets/graph7.png';
+// import Volty_Plot from '/public/assets/graph12.png';
+// import Candle_Breach from '/public/assets/graph9.png';
+// import Del_Rate from '/public/assets/graph3.png';
+// import Heat_Map from '/public/assets/graph8.png';
+// import Sensex_VsStockCorr from '/public/assets/graph5.png';
+// import Sensex_StockCorrBar from '/public/assets/graph6.png';
+// import Macd_Plot from '/public/assets/graph11.png';
+// import Worms_Plots from '/public/assets/graph4.png';
+// import AvgBox_Plots from '/public/assets/graph10.png';
+// import Last_Traded from '/public/assets/graph2.png';
+// // import { CgLogIn } from 'react-icons/cg';
+// import { useAuth } from '../AuthContext';
+// import CandlePattern from './CandlePattern';
+// import Shareholding from './Shareholding';
+// // import FinancialTabs from './FinancialTabs';
+// import FinancialTab from './FinancialTab';
+// import "slick-carousel/slick/slick.css";
+// import "slick-carousel/slick/slick-theme.css";
+// import { MdAnalytics, MdAttachMoney, MdSwapHoriz } from 'react-icons/md';
+
+
+// const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize = false, overlay = false, tabContext = 'equityHub', getAuthToken }) => {
+//   const { isLoggedIn } = useAuth();
+//   const [activeTab, setActiveTab] = useState(() => {
+//     const storageKey = tabContext === 'equityHub' ? 'equityHubLastGraph' : `mySearchLastGraph_${symbol}`;
+//     const saved = localStorage.getItem(storageKey);
+//     return saved ? JSON.parse(saved).activeTab || 'graphs' : 'graphs';
+//   });
+//   const [selectedGraphs, setSelectedGraphs] = useState(() => {
+//     const storageKey = tabContext === 'equityHub' ? 'equityHubLastGraph' : `mySearchLastGraph_${symbol}`;
+//     const saved = localStorage.getItem(storageKey);
+//     return saved ? JSON.parse(saved).selectedGraphs || [] : [];
+//   });
+//   const [plotData, setPlotData] = useState(() => {
+//     const saved = localStorage.getItem('plotData');
+//     return saved ? JSON.parse(saved) : {};
+//   });
+//   const [graphsLoaded, setGraphsLoaded] = useState(false);
+//   const [showLoginModal, setShowLoginModal] = useState(false);
+//   const [error, setError] = useState(null);
+//   const [currentSlide, setCurrentSlide] = useState(0);
+//   const sliderRef = useRef(null);
+//   const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
+//   const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
+//   const MAX_VISIBLE_GRAPHS = 5;
+
+//   const handleLoginClick = () => setShowLoginModal(true);
+//   const handleCloseModal = () => setShowLoginModal(false);
+//   const handleLoginSuccess = () => handleCloseModal();
+
+//   const getCachedData = (key) => {
+//     const cached = localStorage.getItem(key);
+//     if (!cached) return null;
+//     try {
+//       const { data, timestamp } = JSON.parse(cached);
+//       if (Date.now() - timestamp > CACHE_TTL) {
+//         localStorage.removeItem(key);
+//         return null;
+//       }
+//       return data;
+//     } catch (err) {
+//       console.error(`Failed to parse cached data for ${key}:`, err);
+//       localStorage.removeItem(key);
+//       return null;
+//     }
+//   };
+
+//   const setCachedData = (key, data) => {
+//     try {
+//       const serializedData = JSON.stringify({ data, timestamp: Date.now() });
+//       if (serializedData.length > 1024 * 1024) {
+//         console.warn(`Data for ${key} exceeds 1MB, skipping cache.`);
+//         return;
+//       }
+//       localStorage.setItem(key, serializedData);
+//     } catch (err) {
+//       if (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+//         console.error(`Quota exceeded for key ${key}. Clearing oldest items and retrying.`);
+//         const now = Date.now();
+//         for (let i = 0; i < localStorage.length; i++) {
+//           const key = localStorage.key(i);
+//           const cached = localStorage.getItem(key);
+//           try {
+//             const { timestamp } = JSON.parse(cached);
+//             if (now - timestamp > 24 * 60 * 60 * 1000) {
+//               localStorage.removeItem(key);
+//               i--;
+//             }
+//           } catch (e) {
+//             localStorage.removeItem(key);
+//             i--;
+//           }
+//         }
+//         try {
+//           localStorage.setItem(key, serializedData);
+//         } catch (retryErr) {
+//           console.error(`Retry failed for ${key}. Switching to no-cache mode.`, retryErr);
+//           setError("Storage quota exceeded. Data will be fetched live.");
+//         }
+//       } else {
+//         console.error(`Failed to cache data for ${key}:`, err);
+//         setError("Failed to cache data due to an unexpected error.");
+//       }
+//     }
+//   };
+
+//   useEffect(() => {
+//     const storageKey = tabContext === 'equityHub' ? 'equityHubLastGraph' : `mySearchLastGraph_${symbol}`;
+//     const serializableSelectedGraphs = selectedGraphs.map(({ key, title }) => ({ key, title }));
+//     localStorage.setItem(storageKey, JSON.stringify({ activeTab, selectedGraphs: serializableSelectedGraphs }));
+//   }, [activeTab, selectedGraphs, symbol, tabContext]);
+
+//   useEffect(() => {
+//     const fetchPlotData = async () => {
+//       if (!symbol) {
+//         setGraphsLoaded(true);
+//         return;
+//       }
+//       const cacheKey = `plot_${symbol}_${timeRange}_${normalize}`;
+//       const cachedData = getCachedData(cacheKey);
+//       if (cachedData) {
+//         setPlotData((prev) => ({ ...prev, [symbol]: cachedData }));
+//         setGraphsLoaded(true);
+//         return;
+//       }
+
+//       try {
+//         // const response = await fetch(`${API_BASE}/stocks/process`, {
+//         const response = await fetch(`${API_BASE}/stocks/test/candle_chronicle`, {
+//           method: 'POST',
+//           headers: {
+//             'Content-Type': 'application/json',
+//             ...(getAuthToken && { Authorization: `Bearer ${getAuthToken()}` }),
+//           },
+//           body: JSON.stringify({ symbol, timeRange, normalize }),
+//         });
+
+//         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+//         const data = await response.json();
+//         setPlotData((prev) => {
+//           const updated = { ...prev, [symbol]: { ...prev[symbol], [timeRange]: { [normalize ? 'normalized' : 'raw']: data } } };
+//           setCachedData(cacheKey, data);
+//           return updated;
+//         });
+//         setGraphsLoaded(true);
+//       } catch (error) {
+//         // console.error('Error fetching plot data:', error);
+//         // toast.error(error.message || 'Error fetching plot data');
+//       }
+//     };
+
+//     fetchPlotData();
+//   }, [symbol, timeRange, normalize, API_BASE, getAuthToken]);
+
+//   const graphSections = [
+//     { title: "Candle Chronicles: Spread Patterns Over Time (TTM)", description: "Visualizes the distribution of candlestick spread patterns over the past year.", component: <CandleSpread symbol={symbol} />, key: "CandleSpread", image: candle_spread },
+//     { title: "Boxing Prices: TTM Box Plot for Trade Prices", description: "Shows a box plot of trade prices over the last year with key levels.", component: <LastTraded symbol={symbol} />, key: "LastTraded", image: Last_Traded },
+//     { title: "Price Trends in a Box: Monthly Ranges and Averages Explored (TTM)", description: "Displays monthly price ranges and averages over the past year.", component: <AvgBoxPlots symbol={symbol} />, key: "AvgBoxPlots", image: AvgBox_Plots },
+//     { title: "Trend Tapestry: Weekly Trade Delivery in Uptrends & Downtrends", description: "Analyzes weekly trade delivery patterns during market trends.", component: <WormsPlots symbol={symbol} />, key: "WormsPlots", image: Worms_Plots },
+//     { title: "MACD Analysis for TTM", description: "Plots the MACD indicator to identify momentum over the last year.", component: <MacdPlot symbol={symbol} />, key: "MacdPlot", image: Macd_Plot },
+//     { title: "Sensex & Stock Fluctuations", description: "Compares monthly percentage changes between Sensex and the stock.", component: <SensexStockCorrBar symbol={symbol} />, key: "SensexStockCorrBar", image: Sensex_StockCorrBar },
+//     { title: "Sensex Symphony: Harmonizing Stock Correlation Trends (TTM)", description: "Visualizes correlation trends between Sensex and the stock.", component: <SensexVsStockCorr symbol={symbol} />, key: "SensexVsStockCorr", image: Sensex_VsStockCorr },
+//     { title: `Performance Heatmap: Nifty50 vs BSE vs ${symbol}`, description: "A heatmap comparing performance across Nifty50, BSE, and the stock.", component: <HeatMap symbol={symbol} />, key: "HeatMap", image: Heat_Map },
+//     { title: "Market Mood: Delivery Trends & Trading Sentiment", description: "Analyzes delivery trends and trading sentiment over time.", component: <DelRate symbol={symbol} />, key: "DelRate", image: Del_Rate },
+//     { title: "Breach Busters: Analyzing High and Low Breaches", description: "Examines instances of high and low price breaches.", component: <CandleBreach symbol={symbol} />, key: "CandleBreach", image: Candle_Breach },
+//     { title: "Sensex Calculator", description: "A tool to calculate Sensex-related metrics for analysis.", component: <SensexCalculator symbol={symbol} />, key: "SensexCalculator", image: Sensex_Calculator },
+//     { title: "PE vs EPS vs Book Value: Gladiators in the Industry Arena", description: "Compares PE, EPS, and Book Value within the industry context.", component: <IndustryBubble symbol={symbol} />, key: "IndustryBubble", image: Industry_Bubble },
+//   ];
+
+//   const handleGraphSelect = (graph, index) => {
+//     if (!isLoggedIn && !graphSections.slice(0, MAX_VISIBLE_GRAPHS).some((g) => g.key === graph.key)) {
+//       setShowLoginModal(true);
+//       return;
+//     }
+//     setSelectedGraphs((prev,) => {
+//       if (symbols && symbols.length > 1 && !overlay) return [{ key: graph.key, title: graph.title }];
+//       if (prev.some((g) => g.key === graph.key)) return prev.filter((g) => g.key !== graph.key);
+//       if (prev.length < 2) return [...prev, { key: graph.key, title: graph.title }];
+//       return [prev[1], { key: graph.key, title: graph.title }];
+
+
+//     });
+
+//     const allGraphs = isLoggedIn ? graphSections : graphSections.slice(0, MAX_VISIBLE_GRAPHS);
+//     setSelectedGraphs(allGraphs.map(({ key, title }) => ({ key, title })));
+//     setCurrentSlide(index);
+//   };
+
+//   const handleClearSelection = () => setSelectedGraphs([]);
+//   // Custom Previous Arrow
+//   const PrevArrow = ({ onClick }) => (
+//     <button
+//       onClick={onClick}
+//       className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-sky-700 to-sky-800 text-white p-3 rounded-full hover:from-cyan-600 hover:to-cyan-700 transition-all hover:shadow-xl z-10"
+//       aria-label="Previous Graph"
+//     >
+//       <FaArrowLeft className="w-5 h-5" />
+//     </button>
+//   );
+//   // Custom Next Arrow
+//   const NextArrow = ({ onClick }) => (
+//     <button
+//       onClick={onClick}
+//       className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-sky-700 to-sky-800 text-white p-3 rounded-full hover:from-cyan-600 hover:to-cyan-700 transition-all hover:shadow-xl z-10"
+//       aria-label="Next Graph"
+//     >
+//       <FaArrowRight className="w-5 h-5" />
+//     </button>
+//   );
+
+//   const sliderSettings = {
+//     dots: true,
+//     infinite: true,
+//     speed: 500,
+//     slidesToShow: 1,
+//     slidesToScroll: 1,
+//     arrows: true,
+//     prevArrow: <PrevArrow />,
+//     nextArrow: <NextArrow />,
+//     afterChange: (index) => setCurrentSlide(index),
+//     initialSlide: currentSlide,
+//   };
+
+//   const renderGraphTabContent = () => {
+//     if (selectedGraphs.length > 0) {
+//       return (
+//         <div className={`${isFullWidth ? 'w-full' : 'w-auto'} transition-all duration-300 p-4`}>
+//           <div className="flex justify-center mb-4">
+//             <button
+//               onClick={handleClearSelection}
+//               className="flex items-center gap-2 bg-gradient-to-r from-sky-700 to-sky-800 text-white px-6 py-3 rounded-full hover:from-cyan-600 hover:to-cyan-700 transition-all hover:shadow-xl"
+//             >
+//               Back to Graph Selection
+//             </button>
+//           </div>
+//           <Slider {...sliderSettings} ref={sliderRef}>
+//             {selectedGraphs.map(({ title, key }, index) => {
+//               const graph = graphSections.find((g) => g.key === key);
+//               return graph ? (
+//                 <div key={key} className="relative bg-white dark:bg-gray-800 rounded-lg shadow-sm shadow-gray-300 p-4 flex flex-col items-center w-full h-full">
+//                   <h2 className="text-xl font-semibold text-black mb-3 text-center dark:text-white">{title}</h2>
+//                   <div className="w-full h-[600px] overflow-auto dark:text-white">{graph.component}</div>
+//                 </div>
+//               ) : null;
+//             })}
+//           </Slider>
+//         </div>
+//       );
+//     }
+
+//     return (
+//       <div className={`${isFullWidth ? 'w-full' : 'w-auto'} transition-all duration-300 p-4`}>
+//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//           {graphSections.map(({ title, description, key, image }, index) => {
+//             const isVisible = isLoggedIn || index < MAX_VISIBLE_GRAPHS;
+//             return (
+//               <div
+//                 key={key}
+//                 className="relative bg-white dark:bg-gray-800 rounded-lg border p-4 flex flex-col items-center w-full h-full min-h-[300px] cursor-pointer"
+//                 onClick={() => (isVisible ? handleGraphSelect({ title, key }, index) : handleLoginClick())}
+//                 role="button"
+//                 tabIndex={0}
+//               >
+//                 <div className="relative w-full h-full flex flex-col items-center">
+//                   <div className="absolute inset-0 flex flex-col items-center" style={{ filter: !isVisible ? 'blur(5px)' : 'none' }}>
+//                     <img src={image} alt={title} className="w-full h-32 object-cover rounded mb-2" />
+//                     <h2 className="text-xl font-semibold text-black mb-2 text-center sm:text-sm dark:text-white">{title}</h2>
+//                     <p className="text-sm text-gray-600 dark:text-gray-300 text-center dark:text-white">{description}</p>
+//                   </div>
+//                   {!isVisible && (
+//                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-40 rounded-lg z-10">
+//                       {/* <CgLogIn className="w-12 h-12 text-white mb-2" /> */}
+//                       <FaUserLock className='text-2xl text-black' />
+//                       <span className="text-white text-sm font-semibold text-center dark:text-white">Please Login to Unlock</span>
+//                     </div>
+//                   )}
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       </div>
+//     );
+//   };
+
+//   // const renderTechnicalTabContent = () => (
+//   //   <div className="w-full">
+//   //     <h2 className="text-2xl text-center text-black font-bold mb-3">Candlestick Analysis</h2>
+//   //     <TechnicalPlot symbol={symbol} cachedData={plotData[symbol]?.[timeRange]?.[normalize ? 'normalized' : 'raw']} />
+//   //   </div>
+//   // );
+
+//   const renderCandlePatternTabContent = () => (
+//     <div className="w-full">
+//       <h2 className="text-2xl text-center text-black font-bold mb-3"></h2>
+//       <CandlePattern symbol={symbol} />
+//     </div>
+//   );
+
+//   const renderFinanceTabContent = () => (
+//     <div className="w-full">
+//       {/* <h2 className="text-2xl text-center text-black font-bold mb-3">Financial Analysis</h2> */}
+//       {/* Add your financial tab content here */}
+//       <FinancialTab symbol={symbol} />
+
+//     </div>
+//   );
+
+
+//   const renderShareHoldingTabContent = () => (
+//     <div className="w-full">
+//       {/* <h2 className="text-2xl text-center text-black font-bold mb-3">Candlestick Analysis</h2> */}
+//       <Shareholding symbol={symbol} />
+//     </div>
+//   );
+
+//   const PublicTradingActivityTabContent = () => (
+//     <div className="w-full">
+//       {/* <h2 className="text-2xl text-center text-black font-bold mb-3">Candlestick Analysis</h2> */}
+//       <PublicTradingActivityPlot symbol={symbol} />
+//     </div>
+//   );
+
+//   return (
+//     <div className="text-center font-sans">
+//       <div className="tabs mx-auto max-w-6xl flex justify-center my-12">
+//         <div className="flex gap-2 flex-wrap justify-center dark:from-slate-900/90 dark:to-slate-800/80 p-2 backdrop-blur-md  dark:border-slate-700/50 shadow-xl">
+//           {[
+//             { id: 'graphs', label: 'Data Analysis', icon: <MdAnalytics /> },
+//             // { id: 'technical', label: 'Candle Stick' },
+//             { id: 'candle_pattern', label: 'Candle Pattern', icon: <FaChartLine /> },
+//             { id: 'finance', label: 'Financials', icon: <MdAttachMoney /> },
+//             { id: 'Shareholding', label: 'Shareholding', icon: <FaUserTie /> },
+//             { id: 'PublicTradingActivityPlot', label: 'Public Trading Activity', icon: <MdSwapHoriz /> }
+//           ].map((tab) => (
+//             <button
+//               key={tab.id}
+//               role="tab"
+//               aria-selected={activeTab === tab.id}
+//               aria-controls={`${tab.id}-tabpanel`}
+//               id={`${tab.id}-tab`}
+//               onClick={() => setActiveTab(tab.id)}
+//               className={`relative px-8 py-3 rounded-md text-base font-semibold transition-all duration-300 ease-in-out transform hover:-translate-y-0.5
+//                 ${activeTab === tab.id
+//                   ? 'bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-lg shadow-sky-500/30'
+//                   : 'text-gray-700 hover:text-sky-600 dark:text-gray-300 dark:hover:text-blue-400 bg-white/50 dark:bg-slate-800/50 hover:bg-white/80 dark:hover:bg-slate-700/80'
+//                 } flex items-center gap-2`}
+//             >
+//               <span>{tab.icon}</span>
+//               <span>{tab.label}</span>
+//               {activeTab === tab.id && (
+//                 <span className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 w-6 h-1.5 bg-sky-400 rounded-sm animate-pulse"></span>
+//               )}
+//             </button>
+//           ))}
+//         </div>
+//       </div>
+
+
+//       <div
+//         id={`${activeTab}-tabpanel`}
+//         aria-labelledby={`${activeTab}-tab`}
+//         role="tabpanel"
+//         className="p-10 mt-6  bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/50 dark:border-slate-700/50  transition-all duration-500 ease-in-out transform"
+//       >
+
+//         <div className="animate-fade-in">
+//           {activeTab === 'graphs' && renderGraphTabContent()}
+
+//           {activeTab === 'candle_pattern' && renderCandlePatternTabContent()}
+//           {activeTab === 'finance' && renderFinanceTabContent()}
+//           {activeTab === 'Shareholding' && renderShareHoldingTabContent()}
+//           {activeTab === 'PublicTradingActivityPlot' && PublicTradingActivityTabContent()}
+//         </div>
+//       </div>
+
+//       <Login isOpen={showLoginModal} onClose={handleCloseModal} onSuccess={handleLoginSuccess} showButtons={false} />
+//     </div>
+//   );
+// };
+
+// export default GraphSlider;
 
 
 import React, { useEffect, useState, useRef } from 'react';
 import Slider from 'react-slick';
-// import { useAuth } from './AuthContext';
 import CandleBreach from './CandleBreach';
 import LastTraded from './LastTraded';
 import AvgBoxPlots from './AvgBoxPlots';
@@ -3263,15 +3671,47 @@ import HeatMap from './HeatMap';
 import DelRate from './DelRate';
 import VoltyPlot from './VoltyPlot';
 import IndustryBubble from './IndustryBubble';
-// import TechnicalPlot from './TechnicalPlot';
-import toast from 'react-hot-toast';
 import SensexCalculator from './SensexCalculator';
 import MacdPlot from './MacdPlot';
 import CandleSpread from './CandleSpreadDistribution';
-import Login from '../Login';
 import PublicTradingActivityPlot from './PublicTradingActivityPlot';
+import CandlePattern from './CandlePattern';
+import Shareholding from './Shareholding';
+import FinancialTab from './FinancialTab';
+import toast from 'react-hot-toast';
+import {
+  FaArrowLeft,
+  FaArrowRight,
+  FaChartLine,
+  FaUserLock,
+  FaUserTie,
+  FaChevronRight,
+  FaPlay,
+  FaTimes,
+  FaExpand
+} from 'react-icons/fa';
+import {
+  MdAnalytics,
+  MdAttachMoney,
+  MdSwapHoriz,
+  MdGridView,
+  MdBarChart,
+  MdShowChart,
+  MdPieChart,
+  MdTableChart
+} from 'react-icons/md';
+import {
+  FiBarChart2,
+  FiTrendingUp,
+  FiPieChart,
+  FiMap
+} from 'react-icons/fi';
+import { useAuth } from '../AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
-import { FaArrowLeft, FaArrowRight, FaChartLine, FaUserLock, FaUserTie } from 'react-icons/fa';
+// Import graph thumbnails
 import candle_spread from '/public/assets/gaph1.png';
 import Industry_Bubble from '/public/assets/graph13.png';
 import Sensex_Calculator from '/public/assets/graph7.png';
@@ -3285,45 +3725,49 @@ import Macd_Plot from '/public/assets/graph11.png';
 import Worms_Plots from '/public/assets/graph4.png';
 import AvgBox_Plots from '/public/assets/graph10.png';
 import Last_Traded from '/public/assets/graph2.png';
-// import { CgLogIn } from 'react-icons/cg';
-import { useAuth } from '../AuthContext';
-import CandlePattern from './CandlePattern';
-import Shareholding from './Shareholding';
-// import FinancialTabs from './FinancialTabs';
-import FinancialTab from './FinancialTab';
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import { MdAnalytics, MdAttachMoney, MdSwapHoriz } from 'react-icons/md';
-
 
 const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize = false, overlay = false, tabContext = 'equityHub', getAuthToken }) => {
   const { isLoggedIn } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(() => {
     const storageKey = tabContext === 'equityHub' ? 'equityHubLastGraph' : `mySearchLastGraph_${symbol}`;
     const saved = localStorage.getItem(storageKey);
     return saved ? JSON.parse(saved).activeTab || 'graphs' : 'graphs';
   });
-  const [selectedGraphs, setSelectedGraphs] = useState(() => {
+  const [selectedGraph, setSelectedGraph] = useState(() => {
     const storageKey = tabContext === 'equityHub' ? 'equityHubLastGraph' : `mySearchLastGraph_${symbol}`;
     const saved = localStorage.getItem(storageKey);
-    return saved ? JSON.parse(saved).selectedGraphs || [] : [];
+    return saved ? JSON.parse(saved).selectedGraph || null : null;
   });
   const [plotData, setPlotData] = useState(() => {
     const saved = localStorage.getItem('plotData');
     return saved ? JSON.parse(saved) : {};
   });
   const [graphsLoaded, setGraphsLoaded] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [error, setError] = useState(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const sliderRef = useRef(null);
   const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
-  const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
+  const CACHE_TTL = 60 * 60 * 1000;
   const MAX_VISIBLE_GRAPHS = 5;
 
-  const handleLoginClick = () => setShowLoginModal(true);
-  const handleCloseModal = () => setShowLoginModal(false);
-  const handleLoginSuccess = () => handleCloseModal();
+  // Restore selected graph from location.state.graphKey after login
+  useEffect(() => {
+    if (location.state?.graphKey && isLoggedIn) {
+      const graph = graphSections.find((g) => g.key === location.state.graphKey);
+      if (graph && selectedGraph?.key !== graph.key) {
+        setSelectedGraph({ key: graph.key, title: graph.title });
+        navigate(location.pathname, { replace: true, state: { from: location.state.from } });
+      }
+    }
+  }, [location.state, isLoggedIn, symbol, symbols, overlay, navigate]);
+
+  useEffect(() => {
+    const storageKey = tabContext === 'equityHub' ? 'equityHubLastGraph' : `mySearchLastGraph_${symbol}`;
+    const serializableSelectedGraph = selectedGraph ? { key: selectedGraph.key, title: selectedGraph.title } : null;
+    localStorage.setItem(storageKey, JSON.stringify({ activeTab, selectedGraph: serializableSelectedGraph }));
+  }, [activeTab, selectedGraph, symbol, tabContext]);
 
   const getCachedData = (key) => {
     const cached = localStorage.getItem(key);
@@ -3351,41 +3795,9 @@ const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize
       }
       localStorage.setItem(key, serializedData);
     } catch (err) {
-      if (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-        console.error(`Quota exceeded for key ${key}. Clearing oldest items and retrying.`);
-        const now = Date.now();
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          const cached = localStorage.getItem(key);
-          try {
-            const { timestamp } = JSON.parse(cached);
-            if (now - timestamp > 24 * 60 * 60 * 1000) {
-              localStorage.removeItem(key);
-              i--;
-            }
-          } catch (e) {
-            localStorage.removeItem(key);
-            i--;
-          }
-        }
-        try {
-          localStorage.setItem(key, serializedData);
-        } catch (retryErr) {
-          console.error(`Retry failed for ${key}. Switching to no-cache mode.`, retryErr);
-          setError("Storage quota exceeded. Data will be fetched live.");
-        }
-      } else {
-        console.error(`Failed to cache data for ${key}:`, err);
-        setError("Failed to cache data due to an unexpected error.");
-      }
+      console.error(`Failed to cache data for ${key}:`, err);
     }
   };
-
-  useEffect(() => {
-    const storageKey = tabContext === 'equityHub' ? 'equityHubLastGraph' : `mySearchLastGraph_${symbol}`;
-    const serializableSelectedGraphs = selectedGraphs.map(({ key, title }) => ({ key, title }));
-    localStorage.setItem(storageKey, JSON.stringify({ activeTab, selectedGraphs: serializableSelectedGraphs }));
-  }, [activeTab, selectedGraphs, symbol, tabContext]);
 
   useEffect(() => {
     const fetchPlotData = async () => {
@@ -3402,7 +3814,6 @@ const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize
       }
 
       try {
-        // const response = await fetch(`${API_BASE}/stocks/process`, {
         const response = await fetch(`${API_BASE}/stocks/test/candle_chronicle`, {
           method: 'POST',
           headers: {
@@ -3421,7 +3832,6 @@ const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize
         });
         setGraphsLoaded(true);
       } catch (error) {
-        // console.error('Error fetching plot data:', error);
         // toast.error(error.message || 'Error fetching plot data');
       }
     };
@@ -3429,129 +3839,330 @@ const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize
     fetchPlotData();
   }, [symbol, timeRange, normalize, API_BASE, getAuthToken]);
 
+  // Enhanced graph sections with icons and categories
   const graphSections = [
-    { title: "Candle Chronicles: Spread Patterns Over Time (TTM)", description: "Visualizes the distribution of candlestick spread patterns over the past year.", component: <CandleSpread symbol={symbol} />, key: "CandleSpread", image: candle_spread },
-    { title: "Boxing Prices: TTM Box Plot for Trade Prices", description: "Shows a box plot of trade prices over the last year with key levels.", component: <LastTraded symbol={symbol} />, key: "LastTraded", image: Last_Traded },
-    { title: "Price Trends in a Box: Monthly Ranges and Averages Explored (TTM)", description: "Displays monthly price ranges and averages over the past year.", component: <AvgBoxPlots symbol={symbol} />, key: "AvgBoxPlots", image: AvgBox_Plots },
-    { title: "Trend Tapestry: Weekly Trade Delivery in Uptrends & Downtrends", description: "Analyzes weekly trade delivery patterns during market trends.", component: <WormsPlots symbol={symbol} />, key: "WormsPlots", image: Worms_Plots },
-    { title: "MACD Analysis for TTM", description: "Plots the MACD indicator to identify momentum over the last year.", component: <MacdPlot symbol={symbol} />, key: "MacdPlot", image: Macd_Plot },
-    { title: "Sensex & Stock Fluctuations", description: "Compares monthly percentage changes between Sensex and the stock.", component: <SensexStockCorrBar symbol={symbol} />, key: "SensexStockCorrBar", image: Sensex_StockCorrBar },
-    { title: "Sensex Symphony: Harmonizing Stock Correlation Trends (TTM)", description: "Visualizes correlation trends between Sensex and the stock.", component: <SensexVsStockCorr symbol={symbol} />, key: "SensexVsStockCorr", image: Sensex_VsStockCorr },
-    { title: `Performance Heatmap: Nifty50 vs BSE vs ${symbol}`, description: "A heatmap comparing performance across Nifty50, BSE, and the stock.", component: <HeatMap symbol={symbol} />, key: "HeatMap", image: Heat_Map },
-    { title: "Market Mood: Delivery Trends & Trading Sentiment", description: "Analyzes delivery trends and trading sentiment over time.", component: <DelRate symbol={symbol} />, key: "DelRate", image: Del_Rate },
-    { title: "Breach Busters: Analyzing High and Low Breaches", description: "Examines instances of high and low price breaches.", component: <CandleBreach symbol={symbol} />, key: "CandleBreach", image: Candle_Breach },
-    { title: "Sensex Calculator", description: "A tool to calculate Sensex-related metrics for analysis.", component: <SensexCalculator symbol={symbol} />, key: "SensexCalculator", image: Sensex_Calculator },
-    { title: "PE vs EPS vs Book Value: Gladiators in the Industry Arena", description: "Compares PE, EPS, and Book Value within the industry context.", component: <IndustryBubble symbol={symbol} />, key: "IndustryBubble", image: Industry_Bubble },
+    {
+      title: "Candle Chronicles: Spread Patterns Over Time (TTM)",
+      description: "Visualizes the distribution of candlestick spread patterns over the past year.",
+      component: <CandleSpread symbol={symbol} />,
+      key: "CandleSpread",
+      image: candle_spread,
+      icon: <MdShowChart className="text-blue-500" />,
+      category: "Technical Analysis",
+      color: "blue"
+    },
+    {
+      title: "Boxing Prices: TTM Box Plot for Trade Prices",
+      description: "Shows a box plot of trade prices over the last year with key levels.",
+      component: <LastTraded symbol={symbol} />,
+      key: "LastTraded",
+      image: Last_Traded,
+      icon: <MdBarChart className="text-green-500" />,
+      category: "Price Analysis",
+      color: "green"
+    },
+    {
+      title: "Price Trends in a Box: Monthly Ranges and Averages Explored (TTM)",
+      description: "Displays monthly price ranges and averages over the past year.",
+      component: <AvgBoxPlots symbol={symbol} />,
+      key: "AvgBoxPlots",
+      image: AvgBox_Plots,
+      icon: <FiTrendingUp className="text-purple-500" />,
+      category: "Trend Analysis",
+      color: "purple"
+    },
+    {
+      title: "Trend Tapestry: Weekly Trade Delivery in Uptrends & Downtrends",
+      description: "Analyzes weekly trade delivery patterns during market trends.",
+      component: <WormsPlots symbol={symbol} />,
+      key: "WormsPlots",
+      image: Worms_Plots,
+      icon: <FiMap className="text-orange-500" />,
+      category: "Volume Analysis",
+      color: "orange"
+    },
+    {
+      title: "MACD Analysis for TTM",
+      description: "Plots the MACD indicator to identify momentum over the last year.",
+      component: <MacdPlot symbol={symbol} />,
+      key: "MacdPlot",
+      image: Macd_Plot,
+      icon: <MdGridView className="text-red-500" />,
+      category: "Momentum",
+      color: "red"
+    },
+    {
+      title: "Sensex & Stock Fluctuations",
+      description: "Compares monthly percentage changes between Sensex and the stock.",
+      component: <SensexStockCorrBar symbol={symbol} />,
+      key: "SensexStockCorrBar",
+      image: Sensex_StockCorrBar,
+      icon: <FiBarChart2 className="text-cyan-500" />,
+      category: "Market Correlation",
+      color: "cyan"
+    },
+    {
+      title: "Sensex Symphony: Harmonizing Stock Correlation Trends (TTM)",
+      description: "Visualizes correlation trends between Sensex and the stock.",
+      component: <SensexVsStockCorr symbol={symbol} />,
+      key: "SensexVsStockCorr",
+      image: Sensex_VsStockCorr,
+      icon: <MdPieChart className="text-indigo-500" />,
+      category: "Correlation Analysis",
+      color: "indigo"
+    },
+    {
+      title: `Performance Heatmap: Nifty50 vs BSE vs ${symbol}`,
+      description: "A heatmap comparing performance across Nifty50, BSE, and the stock.",
+      component: <HeatMap symbol={symbol} />,
+      key: "HeatMap",
+      image: Heat_Map,
+      icon: <FiPieChart className="text-pink-500" />,
+      category: "Market Comparison",
+      color: "pink"
+    },
+    {
+      title: "Market Mood: Delivery Trends & Trading Sentiment",
+      description: "Analyzes delivery trends and trading sentiment over time.",
+      component: <DelRate symbol={symbol} />,
+      key: "DelRate",
+      image: Del_Rate,
+      icon: <MdTableChart className="text-teal-500" />,
+      category: "Sentiment Analysis",
+      color: "teal"
+    },
+    {
+      title: "Breach Busters: Analyzing High and Low Breaches",
+      description: "Examines instances of high and low price breaches.",
+      component: <CandleBreach symbol={symbol} />,
+      key: "CandleBreach",
+      image: Candle_Breach,
+      icon: <FaChartLine className="text-amber-500" />,
+      category: "Price Action",
+      color: "amber"
+    },
+    {
+      title: "Sensex Calculator",
+      description: "A tool to calculate Sensex-related metrics for analysis.",
+      component: <SensexCalculator symbol={symbol} />,
+      key: "SensexCalculator",
+      image: Sensex_Calculator,
+      icon: <MdAnalytics className="text-lime-500" />,
+      category: "Tools",
+      color: "lime"
+    },
+    {
+      title: "PE vs EPS vs Book Value: Gladiators in the Industry Arena",
+      description: "Compares PE, EPS, and Book Value within the industry context.",
+      component: <IndustryBubble symbol={symbol} />,
+      key: "IndustryBubble",
+      image: Industry_Bubble,
+      icon: <MdSwapHoriz className="text-emerald-500" />,
+      category: "Fundamental Analysis",
+      color: "emerald"
+    },
   ];
 
   const handleGraphSelect = (graph, index) => {
     if (!isLoggedIn && !graphSections.slice(0, MAX_VISIBLE_GRAPHS).some((g) => g.key === graph.key)) {
-      setShowLoginModal(true);
+      navigate('/login', { state: { from: location.pathname, graphKey: graph.key } });
       return;
     }
-    setSelectedGraphs((prev,) => {
-      if (symbols && symbols.length > 1 && !overlay) return [{ key: graph.key, title: graph.title }];
-      if (prev.some((g) => g.key === graph.key)) return prev.filter((g) => g.key !== graph.key);
-      if (prev.length < 2) return [...prev, { key: graph.key, title: graph.title }];
-      return [prev[1], { key: graph.key, title: graph.title }];
-
-
-    });
-
-    const allGraphs = isLoggedIn ? graphSections : graphSections.slice(0, MAX_VISIBLE_GRAPHS);
-    setSelectedGraphs(allGraphs.map(({ key, title }) => ({ key, title })));
-    setCurrentSlide(index);
+    if (selectedGraph && selectedGraph.key === graph.key) {
+      setSelectedGraph(null);
+    } else {
+      setSelectedGraph({ key: graph.key, title: graph.title });
+    }
   };
 
-  const handleClearSelection = () => setSelectedGraphs([]);
-  // Custom Previous Arrow
+  const handleClearSelection = () => setSelectedGraph(null);
+
+  const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
+
+  // Enhanced Custom Arrows
   const PrevArrow = ({ onClick }) => (
     <button
       onClick={onClick}
-      className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-sky-700 to-sky-800 text-white p-3 rounded-full hover:from-cyan-600 hover:to-cyan-700 transition-all hover:shadow-xl z-10"
+      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-white p-3 rounded-full hover:bg-white dark:hover:bg-slate-700 shadow-2xl border border-slate-200 dark:border-slate-600 transition-all duration-300 hover:scale-110 z-20 backdrop-blur-sm"
       aria-label="Previous Graph"
     >
-      <FaArrowLeft className="w-5 h-5" />
+      <FaArrowLeft className="w-4 h-4" />
     </button>
   );
-  // Custom Next Arrow
+
   const NextArrow = ({ onClick }) => (
     <button
       onClick={onClick}
-      className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-sky-700 to-sky-800 text-white p-3 rounded-full hover:from-cyan-600 hover:to-cyan-700 transition-all hover:shadow-xl z-10"
+      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-white p-3 rounded-full hover:bg-white dark:hover:bg-slate-700 shadow-2xl border border-slate-200 dark:border-slate-600 transition-all duration-300 hover:scale-110 z-20 backdrop-blur-sm"
       aria-label="Next Graph"
     >
-      <FaArrowRight className="w-5 h-5" />
+      <FaArrowRight className="w-4 h-4" />
     </button>
   );
 
   const sliderSettings = {
-    dots: true,
-    infinite: true,
+    dots: false,
+    infinite: false,
     speed: 500,
     slidesToShow: 1,
     slidesToScroll: 1,
-    arrows: true,
-    prevArrow: <PrevArrow />,
-    nextArrow: <NextArrow />,
-    afterChange: (index) => setCurrentSlide(index),
-    initialSlide: currentSlide,
+    arrows: false,
+    appendDots: dots => (
+      <div className="bg-white/80 dark:bg-slate-800/80 rounded-full px-4 py-2 backdrop-blur-sm border border-slate-200 dark:border-slate-600">
+        <ul className="flex space-x-2"> {dots} </ul>
+      </div>
+    ),
+    customPaging: i => (
+      <div className="w-2 h-2 bg-slate-300 dark:bg-slate-600 rounded-full transition-all duration-300 hover:bg-slate-400 dark:hover:bg-slate-500" />
+    )
+  };
+
+  const getColorClasses = (color) => {
+    const colorMap = {
+      blue: 'from-blue-500 to-blue-600',
+      green: 'from-green-500 to-green-600',
+      purple: 'from-purple-500 to-purple-600',
+      orange: 'from-orange-500 to-orange-600',
+      red: 'from-red-500 to-red-600',
+      cyan: 'from-cyan-500 to-cyan-600',
+      indigo: 'from-indigo-500 to-indigo-600',
+      pink: 'from-pink-500 to-pink-600',
+      teal: 'from-teal-500 to-teal-600',
+      amber: 'from-amber-500 to-amber-600',
+      lime: 'from-lime-500 to-lime-600',
+      emerald: 'from-emerald-500 to-emerald-600'
+    };
+    return colorMap[color] || 'from-slate-500 to-slate-600';
   };
 
   const renderGraphTabContent = () => {
-    if (selectedGraphs.length > 0) {
+    if (selectedGraph) {
+      const graph = graphSections.find((g) => g.key === selectedGraph.key);
+      if (!graph) return null;
+
       return (
-        <div className={`${isFullWidth ? 'w-full' : 'w-auto'} transition-all duration-300 p-4`}>
-          <div className="flex justify-center mb-4">
-            <button
-              onClick={handleClearSelection}
-              className="flex items-center gap-2 bg-gradient-to-r from-sky-700 to-sky-800 text-white px-6 py-3 rounded-full hover:from-cyan-600 hover:to-cyan-700 transition-all hover:shadow-xl"
-            >
-              Back to Graph Selection
-            </button>
+        <div className={`${isFullWidth ? 'w-full' : 'w-auto'} transition-all duration-300 p-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-slate-900 p-0' : ''}`}>
+          {/* Graph Viewer Header */}
+          <div className={`flex items-center justify-between mb-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-xl ${isFullscreen ? 'rounded-none border-b border-slate-200 dark:border-slate-700' : ''}`}>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleClearSelection}
+                className="flex items-center gap-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-white px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-all duration-200 border border-slate-200 dark:border-slate-600"
+              >
+                <FaArrowLeft className="w-4 h-4" />
+                Back to Gallery
+              </button>
+            </div>
+
+          
           </div>
-          <Slider {...sliderSettings} ref={sliderRef}>
-            {selectedGraphs.map(({ title, key }, index) => {
-              const graph = graphSections.find((g) => g.key === key);
-              return graph ? (
-                <div key={key} className="relative bg-white dark:bg-gray-800 rounded-lg shadow-sm shadow-gray-300 p-4 flex flex-col items-center w-full h-full">
-                  <h2 className="text-xl font-semibold text-black mb-3 text-center dark:text-white">{title}</h2>
-                  <div className="w-full h-[600px] overflow-auto dark:text-white">{graph.component}</div>
+
+          {/* Graph Content */}
+          <div className={`${isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[600px]'} relative`}>
+            <Slider {...sliderSettings} ref={sliderRef}>
+              <div className="relative bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 h-full">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{selectedGraph.title}</h2>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${getColorClasses(graph.color)} text-white`}>
+                    {graph.category}
+                  </span>
                 </div>
-              ) : null;
-            })}
-          </Slider>
+                <div className="w-full h-[calc(100%-80px)] overflow-hidden">
+                  {graph.component}
+                </div>
+              </div>
+            </Slider>
+          </div>
         </div>
       );
     }
 
+    // Graph Gallery View
     return (
-      <div className={`${isFullWidth ? 'w-full' : 'w-auto'} transition-all duration-300 p-4`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {graphSections.map(({ title, description, key, image }, index) => {
+      <div className="w-full transition-all duration-300">
+        {/* Filter Tabs */}
+        {/* <div className="flex flex-wrap gap-2 mb-8 justify-center">
+          <button className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium">
+            All Graphs
+          </button>
+          {[...new Set(graphSections.map(g => g.category))].map(category => (
+            <button key={category} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+              {category}
+            </button>
+          ))}
+        </div> */}
+
+        {/* Graph Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {graphSections.map(({ title, description, key, image, icon, category, color }, index) => {
             const isVisible = isLoggedIn || index < MAX_VISIBLE_GRAPHS;
             return (
               <div
                 key={key}
-                className="relative bg-white dark:bg-gray-800 rounded-lg border p-4 flex flex-col items-center w-full h-full min-h-[300px] cursor-pointer"
-                onClick={() => (isVisible ? handleGraphSelect({ title, key }, index) : handleLoginClick())}
+                className={`group relative bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl ${!isVisible ? 'blur-sm' : ''
+                  }`}
+                onClick={() => (isVisible ? handleGraphSelect({ title, key }, index) : navigate('/login', { state: { from: location.pathname, graphKey: key } }))}
                 role="button"
                 tabIndex={0}
               >
-                <div className="relative w-full h-full flex flex-col items-center">
-                  <div className="absolute inset-0 flex flex-col items-center" style={{ filter: !isVisible ? 'blur(5px)' : 'none' }}>
-                    <img src={image} alt={title} className="w-full h-32 object-cover rounded mb-2" />
-                    <h2 className="text-xl font-semibold text-black mb-2 text-center sm:text-sm dark:text-white">{title}</h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 text-center dark:text-white">{description}</p>
-                  </div>
-                  {!isVisible && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-40 rounded-lg z-10">
-                      {/* <CgLogIn className="w-12 h-12 text-white mb-2" /> */}
-                      <FaUserLock className='text-2xl text-black' />
-                      <span className="text-white text-sm font-semibold text-center dark:text-white">Please Login to Unlock</span>
+                {/* Graph Image */}
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={image}
+                    alt={title}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                  {/* Overlay Content */}
+                  <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-1 rounded text-xs font-medium bg-gradient-to-r ${getColorClasses(color)}`}>
+                        {category}
+                      </span>
+                      <div className="flex items-center gap-2 bg-black/50 rounded-full px-3 py-1">
+                        <FaPlay className="w-3 h-3" />
+                        <span className="text-xs">View Graph</span>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
+
+                {/* Graph Info */}
+                <div className="p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`p-2 rounded-lg bg-gradient-to-r ${getColorClasses(color)} bg-opacity-10`}>
+                      {icon}
+                    </div>
+                    <h3 className="font-semibold text-slate-800 dark:text-white line-clamp-2 leading-tight">
+                      {title}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4">
+                    {description}
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Click to explore
+                    </span>
+                    <FaChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
+                  </div>
+                </div>
+
+                {/* Lock Overlay for Premium Graphs */}
+                {!isVisible && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-2xl z-10">
+                    <div className="text-center p-6">
+                      <FaUserLock className="w-12 h-12 text-white mb-3 mx-auto" />
+                      <span className="text-white font-semibold text-lg block">Premium Feature</span>
+                      <span className="text-slate-300 text-sm block mt-1">Login to unlock all graphs</span>
+                      <button className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full text-sm font-medium hover:from-blue-600 hover:to-purple-600 transition-all duration-200">
+                        Login Now
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -3560,98 +4171,123 @@ const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize
     );
   };
 
-  // const renderTechnicalTabContent = () => (
-  //   <div className="w-full">
-  //     <h2 className="text-2xl text-center text-black font-bold mb-3">Candlestick Analysis</h2>
-  //     <TechnicalPlot symbol={symbol} cachedData={plotData[symbol]?.[timeRange]?.[normalize ? 'normalized' : 'raw']} />
-  //   </div>
-  // );
-
   const renderCandlePatternTabContent = () => (
-    <div className="w-full">
-      <h2 className="text-2xl text-center text-black font-bold mb-3"></h2>
+    <div className="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
       <CandlePattern symbol={symbol} />
     </div>
   );
 
   const renderFinanceTabContent = () => (
-    <div className="w-full">
-      {/* <h2 className="text-2xl text-center text-black font-bold mb-3">Financial Analysis</h2> */}
-      {/* Add your financial tab content here */}
+    <div className="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
       <FinancialTab symbol={symbol} />
-
     </div>
   );
 
-
   const renderShareHoldingTabContent = () => (
-    <div className="w-full">
-      {/* <h2 className="text-2xl text-center text-black font-bold mb-3">Candlestick Analysis</h2> */}
+    <div className="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
       <Shareholding symbol={symbol} />
     </div>
   );
 
   const PublicTradingActivityTabContent = () => (
-    <div className="w-full">
-      {/* <h2 className="text-2xl text-center text-black font-bold mb-3">Candlestick Analysis</h2> */}
+    <div className="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
       <PublicTradingActivityPlot symbol={symbol} />
     </div>
   );
 
+  // Enhanced Tab Configuration
+  const tabs = [
+    {
+      id: 'graphs',
+      label: 'Data Analysis',
+      icon: <MdAnalytics className="w-5 h-5" />,
+      description: 'Interactive charts and visualizations'
+    },
+    {
+      id: 'candle_pattern',
+      label: 'Candle Patterns',
+      icon: <FaChartLine className="w-5 h-5" />,
+      description: 'Candlestick pattern analysis'
+    },
+    {
+      id: 'finance',
+      label: 'Financials',
+      icon: <MdAttachMoney className="w-5 h-5" />,
+      description: 'Financial statements & metrics'
+    },
+    {
+      id: 'Shareholding',
+      label: 'Shareholding',
+      icon: <FaUserTie className="w-5 h-5" />,
+      description: 'Ownership structure analysis'
+    },
+    {
+      id: 'PublicTradingActivityPlot',
+      label: 'Trading Activity',
+      icon: <MdSwapHoriz className="w-5 h-5" />,
+      description: 'Public trading insights'
+    }
+  ];
+
   return (
-    <div className="text-center font-sans">
-      <div className="tabs mx-auto max-w-6xl flex justify-center my-12">
-        <div className="flex gap-2 flex-wrap justify-center dark:from-slate-900/90 dark:to-slate-800/80 p-2 backdrop-blur-md  dark:border-slate-700/50 shadow-xl">
-          {[
-            { id: 'graphs', label: 'Data Analysis', icon: <MdAnalytics /> },
-            // { id: 'technical', label: 'Candle Stick' },
-            { id: 'candle_pattern', label: 'Candle Pattern', icon: <FaChartLine /> },
-            { id: 'finance', label: 'Financials', icon: <MdAttachMoney /> },
-            { id: 'Shareholding', label: 'Shareholding', icon: <FaUserTie /> },
-            { id: 'PublicTradingActivityPlot', label: 'Public Trading Activity', icon: <MdSwapHoriz /> }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`${tab.id}-tabpanel`}
-              id={`${tab.id}-tab`}
-              onClick={() => setActiveTab(tab.id)}
-              className={`relative px-8 py-3 rounded-md text-base font-semibold transition-all duration-300 ease-in-out transform hover:-translate-y-0.5
-                ${activeTab === tab.id
-                  ? 'bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-lg shadow-sky-500/30'
-                  : 'text-gray-700 hover:text-sky-600 dark:text-gray-300 dark:hover:text-blue-400 bg-white/50 dark:bg-slate-800/50 hover:bg-white/80 dark:hover:bg-slate-700/80'
-                } flex items-center gap-2`}
-            >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
-              {activeTab === tab.id && (
-                <span className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 w-6 h-1.5 bg-sky-400 rounded-sm animate-pulse"></span>
-              )}
-            </button>
-          ))}
+    <div className="font-sans w-full bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
+      <div className="container mx-auto px-4 py-8">
+        {/* Enhanced Tab Navigation */}
+        <div className="flex flex-col items-center mb-8">
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-2 text-center">
+            Advanced Stock Analysis
+          </h2>
+          <p className="text-slate-600 dark:text-slate-300 text-center mb-8 max-w-2xl">
+            Comprehensive tools and visualizations for in-depth market analysis of {symbol}
+          </p>
+
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg rounded-2xl p-2 border border-slate-200/50 dark:border-slate-700/50 shadow-xl w-full max-w-4xl">
+            <div className="flex flex-wrap justify-center gap-1">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`${tab.id}-tabpanel`}
+                  id={`${tab.id}-tab`}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex flex-col items-center px-6 py-4 rounded-xl transition-all duration-300 ease-in-out min-w-[120px] group ${activeTab === tab.id
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white  shadow-blue-500/25'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                    }`}
+                >
+                  <div className={`mb-2 transition-transform duration-300 ${activeTab === tab.id ? 'scale-110' : 'group-hover:scale-105'
+                    }`}>
+                    {tab.icon}
+                  </div>
+                  <span className="font-semibold text-sm mb-1">{tab.label}</span>
+                  <span className="text-xs opacity-80">{tab.description}</span>
+
+                  {activeTab === tab.id && (
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-white rounded-full animate-pulse"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div
+          id={`${activeTab}-tabpanel`}
+          aria-labelledby={`${activeTab}-tab`}
+          role="tabpanel"
+          className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-3xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl transition-all duration-500 ease-in-out overflow-hidden"
+        >
+          <div className="p-6 animate-fade-in">
+            {activeTab === 'graphs' && renderGraphTabContent()}
+            {activeTab === 'candle_pattern' && renderCandlePatternTabContent()}
+            {activeTab === 'finance' && renderFinanceTabContent()}
+            {activeTab === 'Shareholding' && renderShareHoldingTabContent()}
+            {activeTab === 'PublicTradingActivityPlot' && PublicTradingActivityTabContent()}
+          </div>
         </div>
       </div>
-
-
-      <div
-        id={`${activeTab}-tabpanel`}
-        aria-labelledby={`${activeTab}-tab`}
-        role="tabpanel"
-        className="p-10 mt-6  bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/50 dark:border-slate-700/50  transition-all duration-500 ease-in-out transform"
-      >
-
-        <div className="animate-fade-in">
-          {activeTab === 'graphs' && renderGraphTabContent()}
-
-          {activeTab === 'candle_pattern' && renderCandlePatternTabContent()}
-          {activeTab === 'finance' && renderFinanceTabContent()}
-          {activeTab === 'Shareholding' && renderShareHoldingTabContent()}
-          {activeTab === 'PublicTradingActivityPlot' && PublicTradingActivityTabContent()}
-        </div>
-      </div>
-
-      <Login isOpen={showLoginModal} onClose={handleCloseModal} onSuccess={handleLoginSuccess} showButtons={false} />
     </div>
   );
 };

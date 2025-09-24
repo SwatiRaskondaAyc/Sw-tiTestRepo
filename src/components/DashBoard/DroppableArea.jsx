@@ -13,8 +13,8 @@
 //     >
 //         <h3 className="text-md font-bold mb-2 capitalize">{id.replace('-', ' ')}</h3>
 //       {children}
-    
-      
+
+
 //     </div>
 //   )
 // }
@@ -32,7 +32,7 @@ const DroppableArea = ({ id, children }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`p-8 rounded-3xl border border-dashed transition-all w-full shadow-lg backdrop-blur-lg 
+      className={`p-8 rounded-3xl border border-dashed transition-all w-full h-full shadow-lg backdrop-blur-lg 
         ${isOver ? 'bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-slate-700 dark:to-slate-800' : 'bg-white dark:bg-[#0f172a]'} 
         border-gray-300 dark:border-slate-600`}
     >

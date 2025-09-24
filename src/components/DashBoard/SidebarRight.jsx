@@ -530,7 +530,7 @@ const SidebarRight = ({ collapsed, setCollapsed }) => {
   const draggableItems = [
     { id: 'CandleSpread', label: 'CandleSpread ', icon: candle_spread },
     { id: 'LastTraded', label: 'LastTraded', icon: Last_Traded },
-    { id: 'Avg Box Plots', label: 'Avg Box Plots', icon: AvgBox_Plots },
+    { id: 'AvgBoxPlots  ', label: 'AvgBoxPlots', icon: AvgBox_Plots },
     { id: 'worms-plot', label: 'Worms Plots', icon: Worms_Plots },
     { id: 'MacdPlot', label: 'MacdPlot', icon: Macd_Plot },
     // { id: 'openClose', label: 'OpenClose', icon: Candle_Breach },

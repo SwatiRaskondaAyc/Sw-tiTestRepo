@@ -52,14 +52,14 @@
 //   const queryParams = new URLSearchParams(window.location.search);
 //   const userType = queryParams.get("type");
 //   const token = queryParams.get("token");
- 
+
 //   console.log("Extracted userType from URL:", userType);
 //   console.log("Extracted token from URL:", token);
- 
+
 //   if (!userType || !token) {
 //     return <h2>Invalid reset link</h2>;
 //   }
- 
+
 //   return userType === "corporate" ? (
 //     <CorporateResetPassword token={token} />
 //   ) : (
@@ -68,11 +68,11 @@
 // };
 
 // const App = () => {
-  
+
 //   return (
-  
-  
-  
+
+
+
 //   <div className=' dark:bg-slate-900 dark:text-white'>
 //     <Routes>
 //       <Route path='*' element={<Home/>}/>
@@ -122,7 +122,7 @@
 //       {/* <Route path='/upcoming' element={<Upcoming />} /> */}
 //       <Route path='/dashboard' element={<Dashboard/>}/>
 //       <Route path='/statsCards' element={<StatsCards/>}/>
-     
+
 //        <Route path='/addNewModal' element={<AddNewModal/>}/>
 //        <Route path='/savedDashboard'element={<SavedDashboard/>}/>
 //        <Route path="/dashboard/view/:shareToken" element={<SharedDashboard />} />
@@ -201,14 +201,14 @@
 //   const queryParams = new URLSearchParams(window.location.search);
 //   const userType = queryParams.get("type");
 //   const token = queryParams.get("token");
- 
+
 //   console.log("Extracted userType from URL:", userType);
 //   console.log("Extracted token from URL:", token);
- 
+
 //   if (!userType || !token) {
 //     return <h2>Invalid reset link</h2>;
 //   }
- 
+
 //   return userType === "corporate" ? (
 //     <CorporateResetPassword token={token} />
 //   ) : (
@@ -238,27 +238,27 @@
 //     // Cleanup listener
 //     return () => prefersDark.removeEventListener('change', handleChange);
 //   }, []);
-  
+
 
 
 
 
 //     const toggleChat = () => setIsChatOpen(!isChatOpen);
-  
+
 //     const toggleMaximize = () => setIsMaximized(!isMaximized);
-  
+
 //     // Manage popup visibility cycle
 //     useEffect(() => {
 //       if (isChatOpen) {
 //         setShowPopup(false); // Hide popup when chatbot is open
 //         return;
 //       }
-  
+
 //       // Initial delay before showing popup
 //       const initialTimeout = setTimeout(() => {
 //         setShowPopup(true);
 //       }, 2000);
-  
+
 //       // Cycle for showing/hiding popup
 //       const interval = setInterval(() => {
 //         setShowPopup(true);
@@ -266,18 +266,18 @@
 //           setShowPopup(false);
 //         }, 3000); // Show for 3 seconds
 //       }, 10000 + Math.random() * 5000); // Random interval between 10-15 seconds
-  
+
 //       return () => {
 //         clearTimeout(initialTimeout);
 //         clearInterval(interval);
 //       };
 //     }, [isChatOpen]);
-  
+
 //     // Handle iframe load errors
 //     const handleIframeError = () => {
 //       setIframeError(true);
 //     };
-  
+
 
 //   const cardVariants = {
 //     hidden: { opacity: 0, y: 50 },
@@ -305,9 +305,9 @@
 
 
 //   return (
-  
-  
-  
+
+
+
 //   <div className={`app ${theme}`}>
 
 
@@ -361,7 +361,7 @@
 //       <Route path='/resetPassword' element={<ResetPassword/>}/>
 //       <Route path='/about' element={<AboutUs/>}/>
 //       <Route path='/terms' element={<TermsConditions/>}/>
-      
+
 //       <Route path='/admin/*' element={<Admin/>}/>
 //        <Route path='/equityhub' element={<EquityHub/>}/>
 //        {/* <Route path='/mysearch' element={<Mysearch />}/> */}
@@ -392,7 +392,7 @@
 //       {/* <Route path='/upcoming' element={<Upcoming />} /> */}
 //       <Route path='/dashboard' element={<Dashboard/>}/>
 //     <Route path="/oauth/redirect" element={<OAuth2RedirectHandler/>} />
-     
+
 //        <Route path='/addNewModal' element={<AddNewModal/>}/>
 //         <Route path='/savedDashboard'element={<SavedDashboard/>}/>
 //        <Route path="/public-dashboard" element={<PublicDashboard />} />
@@ -401,7 +401,7 @@
 //           path="/api/dashboard/:dashId"
 //           element={<Navigate to={({ params }) => `/public-dashboard?dashId=${params.dashId}`} replace />}
 //         />
-   
+
 //        {/* <Route path='/dashboardItem' element={<DashboardItem/>}/> */}
 //       </Routes>
 //       <Toaster />
@@ -538,6 +538,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, X, Maximize2, Minimize2 } from 'lucide-react';
 import Draggable from 'react-draggable';
 import AddNewModal from './components/DashBoard/AddNewModal.jsx'
+import Login from './components/Login.jsx';
+import EmailLogin from './components/EmailLogin.jsx';
 // import { Helmet } from 'react-helmet-async';
 
 const ResetPasswordHandler = () => {
@@ -559,6 +561,11 @@ const ResetPasswordHandler = () => {
   );
 };
 
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  return isAuthenticated ? children : <Navigate to="/login" state={{ from: location.pathname }} replace />;
+};
 const GoogleCallback = () => {
   const location = useLocation();
   const { login } = useAuth();
@@ -654,14 +661,27 @@ const App = () => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [iframeError, setIframeError] = useState(false);
+  const { login } = useAuth();
+  const handleLoginSuccess = () => {
+    login();
+  };
+
+
+  // useEffect(() => {
+  //   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+  //   setTheme(prefersDark.matches ? 'dark' : 'light');
+  //   const handleChange = (e) => setTheme(e.matches ? 'dark' : 'light');
+  //   prefersDark.addEventListener('change', handleChange);
+  //   return () => prefersDark.removeEventListener('change', handleChange);
+  // }, []);
 
   useEffect(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-    setTheme(prefersDark.matches ? 'dark' : 'light');
-    const handleChange = (e) => setTheme(e.matches ? 'dark' : 'light');
-    prefersDark.addEventListener('change', handleChange);
-    return () => prefersDark.removeEventListener('change', handleChange);
+    // Always force light mode on first load
+    setTheme("light");
+    document.documentElement.classList.remove("dark");
+    document.documentElement.style.colorScheme = "light";
   }, []);
+
 
   const toggleChat = () => setIsChatOpen(!isChatOpen);
   const toggleMaximize = () => setIsMaximized(!isMaximized);
@@ -711,7 +731,7 @@ const App = () => {
   return (
     <div className={`app ${theme}`}>
 
-    {/* <Helmet>
+      {/* <Helmet>
         {/* Meta Pixel Script 
         <script>
           {`
@@ -741,6 +761,7 @@ const App = () => {
       </Helmet> */}
       <Routes>
         <Route path="*" element={<Home />} />
+        <Route path='/login' element={<Login onSuccess={handleLoginSuccess} />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/news" element={<News />} />
         <Route path="/support" element={<Support />} />
@@ -758,7 +779,7 @@ const App = () => {
         <Route path="/terms" element={<TermsConditions />} />
         <Route path="/promo" element={<PromoCodeStep />} />
         <Route path="/admin/*" element={<Admin />} />
-        <Route path="/equityhub" element={<EquityHub />} />
+       <Route path="/equityhub" element={<EquityHub onSuccess={handleLoginSuccess} />} />
         <Route path="/search" element={<Search />} />
         <Route path="/portDash" element={<PortLandPage />} />
         <Route path="/portDash/my-portfolio" element={<MyPortfolioPage />} />
@@ -768,12 +789,13 @@ const App = () => {
         <Route path="/chatPage" element={<ChatPage />} />
         <Route path="/updateIndividualProfile" element={<UpdateIndividualProfile />} />
         <Route path="/updateCorporateProfile/*" element={<UpdateCorporateProfile />} />
-        <Route path="/individualSignUp" element={<IndividualSignUp />} />
-        <Route path="/corporateSignUp" element={<CorporateSignUp />} />
+       <Route path="/individualSignUp" element={<IndividualSignUp onSuccess={handleLoginSuccess} />} />
+        <Route path="/corporateSignUp" element={<CorporateSignUp onSuccess={handleLoginSuccess} />} />
+        <Route path="/emaillogin" element={<EmailLogin />} />
         <Route path="/reset-password" element={<ResetPasswordHandler />} />
         <Route path="/individualResetPassword" element={<IndividualResetPassword />} />
         <Route path="/corporateResetPassword" element={<CorporateResetPassword />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+         <Route path="/researchPanel" element={<Dashboard onSuccess={handleLoginSuccess} />} />
         <Route path="/oauth/redirect" element={<OAuth2RedirectHandler />} />
         <Route path="/addNewModal" element={<AddNewModal />} />
         <Route path="/savedDashboard" element={<SavedDashboard />} />

@@ -132,7 +132,7 @@
 //   }));
 // };
 
-  
+
 //   const resetAll = () => setReplacedHoldings({});
 
 //   /*───────────────────────────────────────────
@@ -358,7 +358,7 @@
 //   const selectedData = mode === 'current' ? portfolioData : actualDateData;
 //   const holdings = selectedData?.current_holdings ?? [];
 //   const replacements = selectedData?.replacement_options ?? {};
-   
+
 
 
 //   const displayedHoldings = useMemo(() => (
@@ -386,7 +386,7 @@
 //     const totalGain = displayedHoldings.reduce((s, h) => s + (h.pnl ?? 0), 0);
 //     const totalCost = displayedHoldings.reduce((s, h) => s + (h.base_value ?? h.value ?? 0), 0);
 //     const totalPct = totalCost ? (totalGain / totalCost) * 100 : 0;
-   
+
 
 //     return { eps, pe, bv, pnl: totalGain, returnPct: totalPct };
 //   }, [selectedData, displayedHoldings]);
@@ -1966,7 +1966,7 @@
 //     return (
 //       <div className="flex flex-col items-center justify-center h-screen text-center px-4">
 //         <div className="animate-spin rounded-full h-16 w-16 border-t-4s border-b-4 border-blue-500"></div>
-        
+
 //           <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300">
 //         Your portfolio is getting ready...
 //       </h2>
@@ -2844,6 +2844,424 @@
 
 
 
+// import { useState, useEffect } from 'react';
+// import axios from 'axios';
+// import { RiErrorWarningLine, RiResetLeftFill } from 'react-icons/ri';
+// import { HashLoader } from 'react-spinners';
+// import Navbar from '../Navbar';
+
+// const formatNumberWithCommas = (number) => {
+//   return number.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// };
+
+// const PortfolioReplacement = () => {
+//   const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
+//   const [uploadId, setUploadId] = useState(null);
+//   const [portfolios, setPortfolios] = useState([]); // New state for portfolio list
+//   const [mode, setMode] = useState('current');
+//   const [originalHoldings, setOriginalHoldings] = useState([]);
+//   const [updatedHoldings, setUpdatedHoldings] = useState([]);
+//   const [metrics, setMetrics] = useState({ eps: 0, pe: 0, bv: 0, gain: 0, return: 0 });
+//   const [portfolioData, setPortfolioData] = useState(null);
+//   const [actualDateData, setActualDateData] = useState(null);
+//   const [openDropdown, setOpenDropdown] = useState(null);
+//   const [errorMsg, setErrorMsg] = useState('');
+//   const [loading, setLoading] = useState(false);
+
+//   const getTextColorClass = (value) => {
+//     if (value > 0) return 'text-green-600';
+//     if (value < 0) return 'text-red-600';
+//     return '';
+//   };
+
+//   // Fetch saved portfolios
+//   useEffect(() => {
+//     (async () => {
+//       setLoading(true);
+//       try {
+//         const token = localStorage.getItem('authToken');
+//         const { data } = await axios.get(`${API_BASE}/file/saved`, {
+//           headers: { Authorization: `Bearer ${token}` },
+//         });
+//         if (data.length) {
+//           setPortfolios(data); // Store all portfolios
+//           setUploadId(data[0].uploadId); // Set default to first portfolio
+//         } else {
+//           setErrorMsg('No uploaded files found. Please upload a file before continuing.');
+//         }
+//       } catch (err) {
+//         console.error(err);
+//         setErrorMsg('Please log in to continue.');
+//       } finally {
+//         setLoading(false);
+//       }
+//     })();
+//   }, []);
+
+//   // Fetch portfolio data when uploadId changes
+//   useEffect(() => {
+//     if (!uploadId) return;
+//     (async () => {
+//       setLoading(true);
+//       try {
+//         const [portfolioRes, actualDateRes] = await Promise.all([
+//           axios.post(`${API_BASE}/file/portfolio_replacements`, null, { params: { uploadId } }),
+//           axios.post(`${API_BASE}/file/actual_date_replacements`, null, { params: { uploadId } })
+//         ]);
+//         setPortfolioData(portfolioRes.data);
+//         setActualDateData(actualDateRes.data);
+//         setErrorMsg('');
+//       } catch (err) {
+//         console.error(err);
+//         setErrorMsg('Failed to fetch portfolio data.');
+//       } finally {
+//         setLoading(false);
+//       }
+//     })();
+//   }, [uploadId]);
+
+//   useEffect(() => {
+//     if (mode === 'current' && portfolioData) initializeVersion(portfolioData);
+//     else if (mode === 'actual' && actualDateData) initializeVersion(actualDateData);
+//   }, [mode, portfolioData, actualDateData]);
+
+//   const initializeVersion = (data) => {
+//     const original = data.current_holdings.map(stock => ({
+//       ...stock,
+//       base_symbol: stock.symbol,
+//       base_value: stock.value,
+//       current_price: stock.current_price || 0,
+//       extra: stock.extra || 0,
+//       capital_gain: stock.capital_gain || 0,
+//       percent_return: stock.percent_return || 0,
+//     }));
+//     setOriginalHoldings(original);
+//     setUpdatedHoldings([...original]);
+//     recalculateMetrics([...original]);
+//   };
+
+//   const recalculateMetrics = (holdings) => {
+//     const totalValue = holdings.reduce((acc, stock) => acc + (stock.value || 0), 0);
+//     let weightedEPS = 0, weightedPE = 0, weightedBV = 0;
+//     holdings.forEach(stock => {
+//       const value = stock.value || 0;
+//       const weight = totalValue > 0 ? value / totalValue : 0;
+//       weightedEPS += (stock.eps || 0) * weight;
+//       weightedPE += (stock.pe || 0) * weight;
+//       weightedBV += (stock.bv || 0) * weight;
+//     });
+
+//     const totalGain = holdings.reduce((acc, stock) => acc + (stock.capital_gain || 0), 0);
+//     const totalInvested = holdings.reduce(
+//       (acc, stock) => acc + ((stock.value || 0) - (stock.capital_gain || 0)),
+//       0
+//     );
+//     const totalPct = totalInvested > 0 ? (totalGain / totalInvested * 100) : 0;
+
+//     setMetrics({
+//       eps: weightedEPS.toFixed(2),
+//       pe: weightedPE.toFixed(2),
+//       bv: weightedBV.toFixed(2),
+//       gain: totalGain.toFixed(2),
+//       return: totalPct.toFixed(2)
+//     });
+//   };
+
+//   const handleReplacement = (index, value) => {
+//     const holding = updatedHoldings[index];
+//     let newHoldings = [...updatedHoldings];
+//     if (!value) return;
+
+//     const data = mode === 'current' ? portfolioData : actualDateData;
+//     if (value === holding.base_symbol) {
+//       const original = originalHoldings.find(s => s.symbol === holding.base_symbol);
+//       newHoldings[index] = { ...original };
+//     } else {
+//       const replacements = data.replacement_options[holding.base_symbol] || [];
+//       const candidate = replacements.find(r => r.symbol === value);
+//       if (!candidate) return;
+
+//       if (mode === 'current') {
+//         const newQty = Math.floor(holding.base_value / candidate.price);
+//         const newExtra = holding.base_value - (newQty * candidate.price);
+//         const marketValue = newQty * candidate.price;
+//         const capitalGain = marketValue - holding.base_value;
+//         const percentReturn = holding.base_value > 0 ? (capitalGain / holding.base_value * 100) : 0;
+
+//         newHoldings[index] = {
+//           ...holding,
+//           symbol: candidate.symbol,
+//           qty: newQty,
+//           value: holding.base_value,
+//           eps: candidate.eps,
+//           pe: candidate.pe,
+//           bv: candidate.bv,
+//           extra: newExtra,
+//           capital_gain: capitalGain,
+//           percent_return: percentReturn
+//         };
+//       } else {
+//         newHoldings[index] = {
+//           ...holding,
+//           symbol: candidate.symbol,
+//           qty: candidate.new_qty,
+//           value: holding.base_value,
+//           eps: candidate.eps,
+//           pe: candidate.pe,
+//           bv: candidate.bv,
+//           extra: candidate.extra,
+//           capital_gain: candidate.capital_gain,
+//           percent_return: candidate.percent_return,
+//           current_price: candidate.current_price
+//         };
+//       }
+//     }
+//     setUpdatedHoldings(newHoldings);
+//     recalculateMetrics(newHoldings);
+//   };
+
+//   const resetAll = () => {
+//     setUpdatedHoldings([...originalHoldings]);
+//     recalculateMetrics([...originalHoldings]);
+//   };
+
+//   const toggleDropdown = (index) => {
+//     setOpenDropdown(openDropdown === index ? null : index);
+//   };
+
+//   const handlePortfolioChange = (e) => {
+//     setUploadId(e.target.value);
+//     setOpenDropdown(null); // Close any open replacement dropdown
+//   };
+
+//   useEffect(() => {
+//     const handleClickOutside = (e) => {
+//       if (!e.target.closest('.replacement-dropdown') && !e.target.closest('.symbol-text') && !e.target.closest('#portfolio-select')) {
+//         setOpenDropdown(null);
+//       }
+//     };
+//     document.addEventListener('click', handleClickOutside);
+//     return () => document.removeEventListener('click', handleClickOutside);
+//   }, []);
+
+//   if (loading) {
+//     return (
+//       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-sky-200 via-white to-indigo-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 transition-colors duration-300">
+//         <HashLoader color="#0369a1" size={60} />
+//         <p className="mt-4 text-sky-700 dark:text-white font-semibold text-lg animate-pulse">
+//           Your portfolio is getting ready...
+//         </p>
+//         <p className="mt-4 text-sky-700 dark:text-white font-semibold text-sm animate-pulse">
+//           Sit tight! We are analyzing your stocks and preparing insights.
+//         </p>
+//       </div>
+//     );
+//   }
+
+//   if (errorMsg) {
+//     return (
+//       <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg flex items-center gap-2">
+//         <RiErrorWarningLine className="text-red-500 text-lg" />
+//         <p className="text-red-600 dark:text-red-300 text-sm">{errorMsg}</p>
+//       </div>
+//     );
+//   }
+
+//   const dataSource = mode === 'current' ? portfolioData : actualDateData;
+
+//   return (
+//     <div className="min-h-screen bg-white p-6 dark:bg-slate-800 dark:text-white">
+//       <Navbar />
+//       <div className="max-w-7xl mx-auto mt-16 p-6">
+//         <h1 className="text-4xl font-bold text-center mb-8 text-gray-800 dark:text-white">
+//           Reimagine Your Portfolio: <span className="text-blue-500">What’s Your Best Mix?</span>
+//         </h1>
+
+//         {/* Portfolio Selection Dropdown */}
+//         <div className="flex justify-center mb-6">
+//           <select
+//             id="portfolio-select"
+//             className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-white border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+//             value={uploadId || ''}
+//             onChange={handlePortfolioChange}
+//           >
+//             <option value="" disabled>Select Portfolio</option>
+//             {portfolios.map((portfolio) => (
+//               <option key={portfolio.uploadId} value={portfolio.uploadId}>
+//                     {portfolio.PortfolioName} ({portfolio.platform}){/* Adjust based on API response */}
+//               </option>
+//             ))}
+//           </select>
+//         </div>
+
+//         <div className="flex justify-center mb-6">
+//           <div className="flex space-x-3 bg-gray-100 p-1 rounded-full shadow-inner dark:bg-slate-800 dark:text-white">
+//             <button
+//               className={`px-6 py-2 rounded-full transition text-sm font-semibold ${
+//                 mode === 'current'
+//                   ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow'
+//                   : 'text-gray-700 hover:bg-gray-200 dark:text-white'
+//               }`}
+//               onClick={() => setMode('current')}
+//             >
+//               Current Price Mode
+//             </button>
+//             <button
+//               className={`px-6 py-2 rounded-full transition text-sm font-semibold ${
+//                 mode === 'actual'
+//                   ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow'
+//                   : 'text-gray-700 hover:bg-gray-200 dark:text-white'
+//               }`}
+//               onClick={() => setMode('actual')}
+//             >
+//               Acquisition Price Mode
+//             </button>
+//           </div>
+//         </div>
+
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 font-sans">
+//           <div className="flex gap-4 font-sans">
+//             <MetricCard label="EPS" value={metrics.eps} />
+//             <MetricCard label="PE" value={metrics.pe} />
+//             <MetricCard label="BV" value={metrics.bv} />
+//           </div>
+//           <div className="flex gap-4 font-sans">
+//             <MetricCard
+//               label="Unrealized PNL"
+//               value={`₹${metrics.gain}`}
+//               textColorClass={getTextColorClass(metrics.gain)}
+//             />
+//             <MetricCard
+//               label="% Return"
+//               value={`${metrics.return}%`}
+//               textColorClass={getTextColorClass(metrics.return)}
+//             />
+//           </div>
+//         </div>
+
+//         <div className="bg-white rounded-xl shadow-lg p-6 overflow-x-auto dark:bg-slate-800 dark:text-white">
+//           <h2 className="text-2xl font-semibold mb-4 text-gray-700 dark:bg-slate-800 dark:text-white">Holdings</h2>
+//           <table className="w-full table-auto text-sm dark:bg-slate-800 dark:text-white">
+//             <thead className="bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-white">
+//               <tr>
+//                 <th className="px-4 py-2 text-left">Symbol</th>
+//                 <th className="px-4 py-2 text-left">Quantity</th>
+//                 <th className="px-4 py-2 text-left">Market Value</th>
+//                 <th className="px-4 py-2 text-left">Replacement Value</th>
+//                 <th className="px-4 py-2 text-left">Extra</th>
+//                 <th className="px-4 py-2 text-left">PNL</th>
+//                 <th className="px-4 py-2 text-left">% Return</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {updatedHoldings.map((stock, index) => {
+//                 const replacements = dataSource?.replacement_options[stock.base_symbol] || [];
+//                 return (
+//                   <tr key={index} className="border-t hover:bg-gray-50 dark:bg-slate-800 dark:text-white font-sans">
+//                     <td className="px-4 py-2 relative dark:bg-slate-800 dark:text-white">
+//                       <span className="symbol-text cursor-pointer text-blue-600" onClick={() => toggleDropdown(index)}>
+//                         {stock.symbol} ⏷
+//                       </span>
+//                       {openDropdown === index && (
+//                         <select
+//                           className="replacement-dropdown absolute z-10 bg-white border rounded shadow top-0 ml-2 w-20 dark:bg-slate-800 dark:text-white"
+//                           onChange={(e) => handleReplacement(index, e.target.value)}
+//                         >
+//                           <option value="">-- Select --</option>
+//                           <option value={stock.base_symbol}>Reset ({stock.base_symbol})</option>
+//                           {replacements.map(rep => (
+//                             <option key={rep.symbol} value={rep.symbol}>{rep.symbol}</option>
+//                           ))}
+//                         </select>
+//                       )}
+//                     </td>
+//                     <td className="px-4 py-2 font-sans">{stock.qty}</td>
+//                     <td className="px-4 py-2 font-sans">
+//                       ₹{formatNumberWithCommas(stock.base_value)} ({stock.base_symbol})
+//                     </td>
+//                     <td className="px-4 py-2 font-sans">
+//                       ₹{formatNumberWithCommas(
+//                         mode === 'current'
+//                           ? stock.value - (stock.extra || 0)
+//                           : stock.qty * (stock.current_price || 0)
+//                       )} ({stock.symbol})
+//                     </td>
+//                     <td className={`px-4 py-2 font-sans text-black dark:text-white`}>
+//                       ₹{formatNumberWithCommas(stock.extra || 0)}
+//                     </td>
+//                     <td className={`px-4 font-sans py-2 ${getTextColorClass(stock.capital_gain)}`}>
+//                       ₹{formatNumberWithCommas(stock.capital_gain || 0)}
+//                     </td>
+//                     <td className={`px-4 font-sans py-2 ${getTextColorClass(stock.percent_return)}`}>
+//                       {formatNumberWithCommas(stock.percent_return || 0)}%
+//                     </td>
+//                   </tr>
+//                 );
+//               })}
+//             </tbody>
+//           </table>
+//           <div className="text-center">
+//             <button
+//               className="mt-6 inline-flex items-center gap-2 px-6 py-2 text-white rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 shadow-md"
+//               onClick={resetAll}
+//             >
+//               <RiResetLeftFill className="text-lg" />
+//               <span>Reset All to Original</span>
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// const MetricCard = ({ label, value, textColorClass = "" }) => {
+//   const formattedValue = typeof value === 'string' && value.startsWith('₹')
+//     ? `₹${formatNumberWithCommas(parseFloat(value.replace('₹', '')))}`
+//     : typeof value === 'string' && value.endsWith('%')
+//     ? `${formatNumberWithCommas(parseFloat(value.replace('%', '')))}%`
+//     : formatNumberWithCommas(parseFloat(value));
+
+//   return (
+//     <div className="bg-white shadow-md rounded-lg p-4 w-full dark:bg-slate-800">
+//       <h4 className="text-gray-600 text-sm dark:text-gray-300">{label}</h4>
+//       <p className={`text-2xl font-bold ${textColorClass}`}>
+//         {formattedValue}
+//       </p>
+//     </div>
+//   );
+// };
+
+// export default PortfolioReplacement;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { RiErrorWarningLine, RiResetLeftFill } from 'react-icons/ri';
@@ -2852,6 +3270,31 @@ import Navbar from '../Navbar';
 
 const formatNumberWithCommas = (number) => {
   return number.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const ErrorCard = ({ message, actionText, actionUrl, onActionClick }) => {
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      className="bg-red-50 dark:bg-red-900/30 p-6 rounded-lg flex flex-col items-center gap-4 max-w-md mx-auto border border-red-200 dark:border-red-800 shadow-md"
+    >
+      <div className="flex items-center gap-3">
+        <RiErrorWarningLine className="text-red-500 text-2xl" />
+        <p className="text-red-600 dark:text-red-300 text-base font-medium text-center">
+          {message}
+        </p>
+      </div>
+      {actionText && (
+        <button
+          onClick={onActionClick || (() => window.location.href = actionUrl)}
+          className="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
+        >
+          {actionText}
+        </button>
+      )}
+    </div>
+  );
 };
 
 const PortfolioReplacement = () => {
@@ -3046,23 +3489,62 @@ const PortfolioReplacement = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-sky-200 via-white to-indigo-100 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 transition-colors duration-300">
-        <HashLoader color="#0369a1" size={60} />
-        <p className="mt-4 text-sky-700 dark:text-white font-semibold text-lg animate-pulse">
-          Your portfolio is getting ready...
-        </p>
-        <p className="mt-4 text-sky-700 dark:text-white font-semibold text-sm animate-pulse">
-          Sit tight! We are analyzing your stocks and preparing insights.
-        </p>
+      <div className="relative min-h-screen bg-white  dark:bg-slate-800 transition-colors duration-300">
+        <Navbar className="fixed top-0 left-0 right-0 z-50" />
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <div className="relative z-10 flex flex-col items-center">
+            <HashLoader color="#0369a1" size={60} />
+            <p className="mt-4 text-sky-700 dark:text-white font-semibold text-lg animate-pulse">
+              Your portfolio is getting ready...
+            </p>
+            <p className="mt-4 text-sky-700 dark:text-white font-semibold text-sm animate-pulse">
+              Sit tight! We are analyzing your stocks and preparing insights.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (errorMsg) {
+    const isLoginError = errorMsg.includes('log in');
+    const isNoFilesError = errorMsg.includes('No uploaded files');
+    const isFetchError = errorMsg.includes('Failed to fetch');
+
+    const getFriendlyErrorMessage = (errorMsg) => {
+      switch (errorMsg) {
+        case 'Failed to fetch portfolio data.':
+          return 'We couldn’t load your portfolio. Please try again or contact support.';
+        case 'Please log in to continue.':
+          return 'You need to log in to access your portfolio.';
+        case 'No uploaded files found. Please upload a file before continuing.':
+          return 'No portfolios found. Upload a file to get started.';
+        default:
+          return errorMsg;
+      }
+    };
+
+    const handleRetry = () => {
+      if (isFetchError) {
+        window.location.reload();
+      }
+    };
+
     return (
-      <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-lg flex items-center gap-2">
-        <RiErrorWarningLine className="text-red-500 text-lg" />
-        <p className="text-red-600 dark:text-red-300 text-sm">{errorMsg}</p>
+      <div className="relative min-h-screen bg-white dark:bg-slate-800 transition-colors duration-300">
+        <Navbar className="fixed top-0 left-0 right-0 z-50" />
+        <div className="flex items-center justify-center min-h-screen">
+          <ErrorCard
+            message={getFriendlyErrorMessage(errorMsg)}
+            actionText={
+
+              // isNoFilesError ? 'Upload a File' :
+                isFetchError ? 'Try Again' : null
+            }
+            // actionUrl={isNoFilesError ? '/portDash' : null}
+            onActionClick={handleRetry}
+          />
+        </div>
       </div>
     );
   }
@@ -3071,7 +3553,7 @@ const PortfolioReplacement = () => {
 
   return (
     <div className="min-h-screen bg-white p-6 dark:bg-slate-800 dark:text-white">
-      <Navbar />
+      <Navbar className="fixed top-0 left-0 right-0 z-50" />
       <div className="max-w-7xl mx-auto mt-16 p-6">
         <h1 className="text-4xl font-bold text-center mb-8 text-gray-800 dark:text-white">
           Reimagine Your Portfolio: <span className="text-blue-500">What’s Your Best Mix?</span>
@@ -3088,7 +3570,7 @@ const PortfolioReplacement = () => {
             <option value="" disabled>Select Portfolio</option>
             {portfolios.map((portfolio) => (
               <option key={portfolio.uploadId} value={portfolio.uploadId}>
-                    {portfolio.PortfolioName} ({portfolio.platform}){/* Adjust based on API response */}
+                {portfolio.PortfolioName} ({portfolio.platform}){/* Adjust based on API response */}
               </option>
             ))}
           </select>
@@ -3097,21 +3579,19 @@ const PortfolioReplacement = () => {
         <div className="flex justify-center mb-6">
           <div className="flex space-x-3 bg-gray-100 p-1 rounded-full shadow-inner dark:bg-slate-800 dark:text-white">
             <button
-              className={`px-6 py-2 rounded-full transition text-sm font-semibold ${
-                mode === 'current'
+              className={`px-6 py-2 rounded-full transition text-sm font-semibold ${mode === 'current'
                   ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow'
                   : 'text-gray-700 hover:bg-gray-200 dark:text-white'
-              }`}
+                }`}
               onClick={() => setMode('current')}
             >
               Current Price Mode
             </button>
             <button
-              className={`px-6 py-2 rounded-full transition text-sm font-semibold ${
-                mode === 'actual'
+              className={`px-6 py-2 rounded-full transition text-sm font-semibold ${mode === 'actual'
                   ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow'
                   : 'text-gray-700 hover:bg-gray-200 dark:text-white'
-              }`}
+                }`}
               onClick={() => setMode('actual')}
             >
               Acquisition Price Mode
@@ -3219,8 +3699,8 @@ const MetricCard = ({ label, value, textColorClass = "" }) => {
   const formattedValue = typeof value === 'string' && value.startsWith('₹')
     ? `₹${formatNumberWithCommas(parseFloat(value.replace('₹', '')))}`
     : typeof value === 'string' && value.endsWith('%')
-    ? `${formatNumberWithCommas(parseFloat(value.replace('%', '')))}%`
-    : formatNumberWithCommas(parseFloat(value));
+      ? `${formatNumberWithCommas(parseFloat(value.replace('%', '')))}%`
+      : formatNumberWithCommas(parseFloat(value));
 
   return (
     <div className="bg-white shadow-md rounded-lg p-4 w-full dark:bg-slate-800">

@@ -633,9 +633,9 @@ const PortfMatrics = () => {
             ].map(([label, value]) => (
               <div
                 key={label}
-                className="flex-1 p-4 bg-cyan-100 dark:bg-cyan-900 rounded-lg border-l-4 border-cyan-500 shadow-lg"
+                className="flex-1 p-4 bg-cyan-100 dark:bg-cyan-900 rounded-lg border-l-4 border-cyan-500 shadow-lg dark:text-white"
               >
-                <strong className="text-lg">{label}</strong>
+                <strong className="text-lg dark:text-white">{label}</strong>
                 <div className="text-xl font-semibold text-gray-900 dark:text-white">{value}</div>
               </div>
             ))}
@@ -670,8 +670,8 @@ const PortfMatrics = () => {
           <div className="w-full max-w-5xl flex flex-col md:flex-row gap-4">
             {/* Key Insights */}
             <div className="flex-1 p-6 bg-cyan-100 dark:bg-cyan-900 rounded-lg shadow-lg">
-              <strong className="text-lg flex justify-center mb-2">🔍 Key Insights</strong>
-              <div className="text-gray-900 dark:text-white text-sm font-medium">
+              <strong className="text-lg flex justify-center mb-2 dark:text-white">🔍 Key Insights</strong>
+              <div className="text-gray-900 dark:text-white text-sm font-medium ">
                 ⚠️ High Concentration in Capital Goods
                 <br />
                 <span>
@@ -683,7 +683,7 @@ const PortfMatrics = () => {
 
             {/* Recommended Actions */}
             <div className="flex-1 p-6 bg-cyan-100 dark:bg-cyan-900 rounded-lg shadow-lg">
-              <strong className="text-lg flex justify-center mb-2">💡 Recommended Actions</strong>
+              <strong className="text-lg flex justify-center mb-2 dark:text-white">💡 Recommended Actions</strong>
               <div className="text-gray-900 dark:text-white text-sm font-medium">
                 👉 Diversify from Capital Goods Sector
                 <br />

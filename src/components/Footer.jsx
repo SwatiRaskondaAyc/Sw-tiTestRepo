@@ -414,7 +414,7 @@ const Footer = () => {
             </h3>
             <ul className="space-y-4">
               {[
-                ["FAQ", "/faq"],
+                // ["FAQ", "/faq"],
                 ["Support", "/support"],
                 ["Terms & Conditions", "/terms"],
               ].map(([label, to]) => (

@@ -25,6 +25,10 @@ RUN npm install react-helmet-async
 RUN npm install @react-oauth/google axios react-hot-toast react-router-dom
 RUN npm install @dnd-kit/sortable @dnd-kit/utilities 
 RUN npm install react-grid-layout react-resizable
+RUN npm install react-phone-input-2
+RUN npm install lucide-react
+RUN npm install video.js    
+RUN npm install react-resizable-panels@^3.0.6
 
 
 # Copy the rest of the app
