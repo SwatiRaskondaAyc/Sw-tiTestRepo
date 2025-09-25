@@ -6059,6 +6059,1693 @@
 
 
 
+// -------------------before code ----------------------
+
+// import React, { useEffect, useState, useRef } from 'react';
+// import { DndContext, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+// import { MdOutlineDashboardCustomize, MdOutlineDriveFileRenameOutline } from 'react-icons/md';
+// import { BiSolidSave } from 'react-icons/bi';
+// import { IoMdClose, IoMdSave } from 'react-icons/io';
+// import { FaHome } from 'react-icons/fa';
+// import { AnimatePresence, motion } from 'framer-motion';
+// import { Link, useLocation, useNavigate } from 'react-router-dom';
+// import toast from 'react-hot-toast';
+// import Modal from 'react-modal';
+// import SidebarRight from './SidebarRight';
+// import AddNewModal from './AddNewModal';
+// import DragStartModal from './DragStartModal';
+// import DroppableArea from './DroppableArea';
+// import { equityHubMap, portfolioMap } from './ComponentRegistry';
+// import { GoSidebarExpand } from 'react-icons/go';
+// import { GraphDataProvider } from '../Portfolio/GraphDataContext';
+// import PortfolioSelectModal from './PortfolioSelectModal';
+// import { FaChartLine, FaBriefcase } from 'react-icons/fa';
+// import { Search } from "lucide-react";
+// import SearchList from '../EquityHub/SearchList';
+// import { useAuth } from '../AuthContext';
+// import { CiLogout } from "react-icons/ci";
+// import { logActivity } from '../../services/api';
+// import { IoMdArrowDropdown } from "react-icons/io";
+// import axios from 'axios';
+
+// Modal.setAppElement('#root');
+
+// const DashBoard = () => {
+//   const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
+//   const [showModal, setShowModal] = useState(false);
+//   const [tabs, setTabs] = useState(['Dashboard 1']);
+//   const [activeTab, setActiveTab] = useState('Dashboard 1');
+//   const [uploadId, setUploadId] = useState(null);
+//   const [platform, setPlatform] = useState('');
+//   const [symbol, setSymbol] = useState(null);
+//   const [savedStocks, setSavedStocks] = useState([]);
+//   const [savedPortfolios, setSavedPortfolios] = useState([]);
+//   const [droppedMap, setDroppedMap] = useState({ 'Dashboard 1': { general: [] } });
+//   const [editingTab, setEditingTab] = useState(null);
+//   const [editedTabName, setEditedTabName] = useState('');
+//   const [searchTerm, setSearchTerm] = useState('');
+//   const [searchedStocks, setSearchedStocks] = useState([]);
+//   const [isLoggedIn, setIsLoggedIn] = useState(false);
+//   const [showDragModal, setShowDragModal] = useState(false);
+//   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
+//   const [collapsed, setCollapsed] = useState(false);
+//   const [isMenuOpen, setIsMenuOpen] = useState(false);
+//   const [dragCountMap, setDragCountMap] = useState({ 'Dashboard 1': {} });
+//   const [currentDragItem, setCurrentDragItem] = useState(null);
+//   const [error, setError] = useState(null);
+//   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+//   const [showSavedModal, setShowSavedModal] = useState(false);
+//   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+//   const [pendingNavigation, setPendingNavigation] = useState(null);
+//   const [pendingTab, setPendingTab] = useState(null);
+//   const location = useLocation();
+//   const navigate = useNavigate();
+//   const queryParams = new URLSearchParams(location.search);
+//   const [sticky, setSticky] = useState(false);
+//   const [userType, setUserType] = useState(null);
+//   const [fullName, setFullName] = useState('');
+//   const initialQuery = queryParams.get('query') || '';
+//   const [isDisabled, setIsDisabled] = useState(true);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [results, setResults] = useState([]);
+//   const { login, logout } = useAuth();
+//   const [showDeleteModal, setShowDeleteModal] = useState(false);
+//   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
+//   const drawerRef = useRef(null);
+
+//   const isActive = (path) => location.pathname === path;
+
+//   const handleNavClick = async (label, path) => {
+//     if (hasUnsavedChanges) {
+//       setPendingNavigation({ label, path });
+//       setShowUnsavedModal(true);
+//       return false;
+//     }
+//     await logActivity(`${label} tab clicked`);
+//     navigate(path);
+//     return true;
+//   };
+
+//   const handleDashboardClick = (e) => {
+//     if (!isLoggedIn) {
+//       e.preventDefault();
+//       toast.error("Please login to access the Dashboard");
+//     } else {
+//       handleNavClick("Dashboard", "/dashboard");
+//     }
+//   };
+
+//   useEffect(() => {
+//     const handleClickOutside = (event) => {
+//       if (!event.target.closest("#portfolio-dropdown")) {
+//         setIsPortfolioOpen(false);
+//       }
+//     };
+//     document.addEventListener("mousedown", handleClickOutside);
+//     return () => document.removeEventListener("mousedown", handleClickOutside);
+//   }, []);
+
+//   useEffect(() => {
+//     const handleScroll = () => setSticky(window.scrollY > 0);
+//     window.addEventListener("scroll", handleScroll);
+//     return () => window.removeEventListener("scroll", handleScroll);
+//   }, []);
+
+//   const handleLogout = () => {
+//     if (hasUnsavedChanges) {
+//       setPendingNavigation({ label: 'logout', path: '/' });
+//       setShowUnsavedModal(true);
+//       return;
+//     }
+//     localStorage.removeItem('authToken');
+//     localStorage.removeItem('userType');
+//     localStorage.removeItem('userEmail');
+//     logout();
+//     toast.success("Logout successfully!");
+//     navigate('/');
+//   };
+
+//   const handlePortfolioClick = (e) => {
+//     e.preventDefault();
+//     if (hasUnsavedChanges) {
+//       setPendingNavigation({ label: 'portfolio', path: '/portDash' });
+//       setShowUnsavedModal(true);
+//       return;
+//     }
+//     setIsPortfolioOpen(true);
+//     logActivity("Portfolio tab clicked");
+//     navigate('/portDash');
+//   };
+
+//   const sensors = useSensors(
+//     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+//     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+//   );
+
+//   useEffect(() => {
+//     const token = localStorage.getItem('authToken');
+//     if (token) setIsLoggedIn(true);
+//   }, []);
+
+//   useEffect(() => {
+//     const storedUploadId = localStorage.getItem('uploadId');
+//     const storedPlatform = localStorage.getItem('platform');
+//     if (storedUploadId && storedPlatform) {
+//       setUploadId(storedUploadId);
+//       setPlatform(storedPlatform);
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     const currentTab = droppedMap[activeTab] || { general: [] };
+//     const hasChanges = currentTab.general.length > 0;
+//     setHasUnsavedChanges(hasChanges);
+//   }, [droppedMap, activeTab]);
+
+//   const fetchSavedPortfolio = async () => {
+//     try {
+//       setError('');
+//       const token = localStorage.getItem('authToken');
+//       if (!token) {
+//         setError('Please login to view your portfolios');
+//         return;
+//       }
+//       const response = await fetch(`${API_BASE}/file/saved`, {
+//         method: 'GET',
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       if (!response.ok) {
+//         const err = await response.json();
+//         setError(err.error || 'Failed to fetch saved portfolios');
+//         return;
+//       }
+//       const data = await response.json();
+//       if (data.length > 0) {
+//         setSavedPortfolios(data);
+//         setUploadId(data[0].uploadId);
+//         setPlatform(data[0].platform);
+//       } else {
+//         setSavedPortfolios([]);
+//         setError('No portfolios found');
+//       }
+//     } catch (err) {
+//       console.error('Error fetching saved portfolios:', err);
+//       setError('Network error. Please try again later.');
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchSavedPortfolio();
+//   }, [API_BASE]);
+
+//   const handleStockSearch = async () => {
+//     try {
+//       const token = localStorage.getItem('authToken');
+//       const response = await fetch(`${API_BASE}/stocks/test/search?query=${searchTerm}`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       const data = await response.json();
+//       if (Array.isArray(data) && data.length > 0) {
+//         setSearchedStocks(data);
+//         setSavedStocks(data);
+//       } else {
+//         setSearchedStocks([]);
+//         toast.info('No stocks found for the search term.');
+//         setError('Company not found');
+//       }
+//     } catch (err) {
+//       console.error('Error fetching stock suggestions:', err);
+//       setSearchedStocks([]);
+//       setError('Company not found in our list. Please check the name and search again.');
+//     }
+//   };
+
+//   const handleRenameTab = (oldName, newName) => {
+//     if (!newName || newName.trim() === '') return;
+//     if (tabs.includes(newName)) {
+//       toast.info('A dashboard with this name already exists.');
+//       return;
+//     }
+//     setTabs((prevTabs) => prevTabs.map((tab) => (tab === oldName ? newName : tab)));
+//     setDroppedMap((prev) => {
+//       const updated = { ...prev };
+//       updated[newName] = prev[oldName];
+//       delete updated[oldName];
+//       return updated;
+//     });
+//     setDragCountMap((prev) => {
+//       const updated = { ...prev };
+//       updated[newName] = prev[oldName];
+//       delete updated[oldName];
+//       return updated;
+//     });
+//     if (activeTab === oldName) setActiveTab(newName);
+//     setEditingTab(null);
+//     setEditedTabName('');
+//     const currentTab = droppedMap[newName] || { general: [] };
+//     setHasUnsavedChanges(currentTab.general.length > 0);
+//   };
+
+//   const handleDeleteComponent = (index) => {
+//     setDroppedMap((prev) => {
+//       const updated = { ...prev };
+//       updated[activeTab] = {
+//         ...prev[activeTab],
+//         general: prev[activeTab].general.filter((_, idx) => idx !== index),
+//       };
+//       return updated;
+//     });
+//     const label = droppedMap[activeTab].general[index].label;
+//     const remaining = droppedMap[activeTab].general.filter((item, idx) => idx !== index && item.label === label);
+//     if (remaining.length === 0) {
+//       setDragCountMap((prev) => ({
+//         ...prev,
+//         [activeTab]: { ...prev[activeTab], [label]: 0 },
+//       }));
+//     }
+//     const currentTab = droppedMap[activeTab] || { general: [] };
+//     setHasUnsavedChanges(currentTab.general.length > 0);
+//   };
+
+//   const handleClearCompany = (companyName) => {
+//     setDroppedMap((prev) => ({
+//       ...prev,
+//       [activeTab]: {
+//         ...prev[activeTab],
+//         general: prev[activeTab].general.filter((item) => item.companyName !== companyName),
+//       },
+//     }));
+//     const affectedLabels = droppedMap[activeTab].general
+//       .filter((item) => item.companyName === companyName)
+//       .map((item) => item.label);
+//     setDragCountMap((prev) => {
+//       const updated = { ...prev, [activeTab]: { ...prev[activeTab] } };
+//       affectedLabels.forEach((label) => {
+//         const remaining = droppedMap[activeTab].general.filter(
+//           (item) => item.label === label && item.companyName !== companyName
+//         );
+//         updated[activeTab][label] = remaining.length > 0 ? prev[activeTab][label] || 1 : 0;
+//       });
+//       return updated;
+//     });
+//     toast.success(`Company ${companyName} and associated graphs removed`);
+//     const currentTab = droppedMap[activeTab] || { general: [] };
+//     setHasUnsavedChanges(currentTab.general.length > 0);
+//   };
+
+//   const generateDefaultDashboardName = async (baseName = 'Dashboard') => {
+//     try {
+//       const token = localStorage.getItem('authToken');
+//       const response = await fetch(`${API_BASE}/dashboard/fetch`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       if (!response.ok) throw new Error('Failed to fetch dashboards');
+//       const data = await response.json();
+//       const existingNames = data.dashboards.map((dash) => dash.dashboardName);
+//       let index = 1;
+//       let defaultName;
+//       do {
+//         defaultName = `${baseName} ${index}`;
+//         index++;
+//       } while (existingNames.includes(defaultName) || tabs.includes(defaultName));
+//       return defaultName;
+//     } catch (err) {
+//       console.error('Error fetching dashboards for name generation:', err);
+//       let index = 1;
+//       let defaultName;
+//       do {
+//         defaultName = `${baseName} ${index}`;
+//         index++;
+//       } while (tabs.includes(defaultName));
+//       return defaultName;
+//     }
+//   };
+
+//   const handleNewDashboard = async (title) => {
+//     const newTitle = title && title.trim() ? title : await generateDefaultDashboardName();
+//     if (tabs.includes(newTitle)) {
+//       toast.info('A dashboard with this name already exists.');
+//       return;
+//     }
+//     setTabs((prev) => [...prev, newTitle]);
+//     setDroppedMap((prev) => ({ ...prev, [newTitle]: { general: [] } }));
+//     setActiveTab(newTitle);
+//     setShowModal(false);
+//     setDragCountMap((prev) => ({ ...prev, [newTitle]: {} }));
+//     setIsMenuOpen(false);
+//     setHasUnsavedChanges(false);
+//   };
+
+//   const handleDragStart = (event) => {
+//     const { active } = event;
+//     const label = active?.data?.current?.label;
+//     setCurrentDragItem(active?.data?.current);
+//     const equityLabels = Object.keys(equityHubMap);
+//     const portfolioLabels = Object.keys(portfolioMap);
+//     if (equityLabels.includes(label)) {
+//       const currentDragCount = dragCountMap[activeTab]?.[label] || 0;
+//       if (currentDragCount === 0 && !droppedMap[activeTab].general.some((item) => item.label === label)) {
+//         setShowDragModal(true);
+//       } else if (currentDragCount >= 1) {
+//         setShowDragModal(true);
+//       }
+//     } else if (portfolioLabels.includes(label)) {
+//       setShowPortfolioModal(true);
+//     }
+//   };
+
+//   const handleItemClick = (item) => {
+//     const { id, label } = item;
+//     const equityLabels = Object.keys(equityHubMap);
+//     const portfolioLabels = Object.keys(portfolioMap);
+
+//     let section = null;
+//     if (equityLabels.includes(label)) section = 'equity';
+//     if (portfolioLabels.includes(label)) section = 'portfolio';
+
+//     if (section === 'equity') {
+//       setCurrentDragItem({ label });
+//       setShowDragModal(true);
+//       return;
+//     }
+
+//     if (section === 'portfolio') {
+//       setCurrentDragItem({ label });
+//       setShowPortfolioModal(true);
+//       return;
+//     }
+//   };
+
+//   const handleDragEnd = (event) => {
+//     const { over, active } = event;
+//     const label = active?.data?.current?.label;
+//     const id = active?.id;
+//     if (!over || !label || !id) return;
+
+//     if (over.id !== 'general') {
+//       toast.error(`"${label}" can only be dropped in the whiteboard area.`);
+//       return;
+//     }
+
+//     const equityLabels = Object.keys(equityHubMap);
+//     const portfolioLabels = Object.keys(portfolioMap);
+
+//     if (equityLabels.includes(label)) {
+//       setCurrentDragItem(active?.data?.current);
+//       setShowDragModal(true);
+//       return;
+//     }
+
+//     if (portfolioLabels.includes(label)) {
+//       setCurrentDragItem(active?.data?.current);
+//       setShowPortfolioModal(true);
+//       return;
+//     }
+//   };
+
+//   const handlePortfolioSelect = (portfolio) => {
+//     if (currentDragItem) {
+//       const draggedItem = {
+//         label: currentDragItem.label,
+//         symbol: '',
+//         companyName: '',
+//         graphType: currentDragItem.label,
+//         uploadId: portfolio.uploadId,
+//         platform: portfolio.platform,
+//         id: `${currentDragItem.label}-${Date.now()}`,
+//         type: 'portfolio',
+//       };
+
+//       setDroppedMap((prev) => {
+//         const currentTab = prev[activeTab] || { general: [] };
+//         const currentSection = currentTab['general'] || [];
+//         return {
+//           ...prev,
+//           [activeTab]: { ...currentTab, general: [...currentSection, draggedItem] },
+//         };
+//       });
+//       setUploadId(portfolio.uploadId);
+//       setPlatform(portfolio.platform);
+//       localStorage.setItem('uploadId', portfolio.uploadId.toString());
+//       localStorage.setItem('platform', portfolio.platform);
+//       setShowPortfolioModal(false);
+//       setCurrentDragItem(null);
+//       setHasUnsavedChanges(true);
+//     }
+//   };
+
+//   const getGridClass = (items) => {
+//     if (items.length === 0) return 'grid-cols-1';
+//     const firstRowCount = Math.min(items.length, 3);
+//     const remainingCount = items.length - firstRowCount;
+//     return `grid grid-cols-1 sm:grid-cols-${firstRowCount} gap-4 ${remainingCount > 0 ? 'sm:grid-rows-2' : ''}`;
+//   };
+
+//   const getVisibleItems = (items) => items;
+
+//   useEffect(() => {
+//     const fetchSavedStocks = async () => {
+//       try {
+//         const token = localStorage.getItem('authToken');
+//         const response = await fetch(`${API_BASE}/stocks/saved`, {
+//           headers: { Authorization: `Bearer ${token}` },
+//         });
+//         const data = await response.json();
+//         if (Array.isArray(data)) {
+//           const symbols = data.map((stock) => stock.symbol);
+//           setSymbol(symbols);
+//         }
+//       } catch (err) {
+//         console.error('Failed to fetch saved stocks:', err);
+//       }
+//     };
+//     fetchSavedStocks();
+//   }, [API_BASE]);
+
+//   const handleSaveDashboard = async () => {
+//     const token = localStorage.getItem('authToken');
+//     const userId = localStorage.getItem('userId');
+//     const userType = localStorage.getItem('userType');
+//     const generalPlots = droppedMap?.[activeTab]?.general || [];
+
+//     if (!token) {
+//       toast.error('Please login first to save your dashboard.');
+//       return;
+//     }
+
+//     if (generalPlots.length === 0) {
+//       toast.error('Please drag and drop at least one plot before saving.');
+//       return;
+//     }
+
+//     let finalDashboardName = activeTab;
+//     try {
+//       const response = await fetch(`${API_BASE}/dashboard/fetch`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       if (!response.ok) throw new Error('Failed to fetch dashboards');
+//       const data = await response.json();
+//       const existingNames = data.dashboards.map((dash) => dash.dashboardName);
+//       if (existingNames.includes(finalDashboardName)) {
+//         finalDashboardName = await generateDefaultDashboardName(activeTab.split(' ')[0] || 'Dashboard');
+//         setTabs((prevTabs) => prevTabs.map((tab) => (tab === activeTab ? finalDashboardName : tab)));
+//         setDroppedMap((prev) => {
+//           const updated = { ...prev };
+//           updated[finalDashboardName] = prev[activeTab];
+//           delete updated[activeTab];
+//           return updated;
+//         });
+//         setDragCountMap((prev) => {
+//           const updated = { ...prev };
+//           updated[finalDashboardName] = prev[activeTab];
+//           delete updated[activeTab];
+//           return updated;
+//         });
+//         setActiveTab(finalDashboardName);
+//         toast.info(`Dashboard name changed to "${finalDashboardName}" to avoid duplication.`);
+//       }
+//     } catch (err) {
+//       console.error('Error checking dashboard names:', err);
+//       if (tabs.includes(finalDashboardName)) {
+//         finalDashboardName = await generateDefaultDashboardName(activeTab.split(' ')[0] || 'Dashboard');
+//         setTabs((prevTabs) => prevTabs.map((tab) => (tab === activeTab ? finalDashboardName : tab)));
+//         setDroppedMap((prev) => {
+//           const updated = { ...prev };
+//           updated[finalDashboardName] = prev[activeTab];
+//           delete updated[activeTab];
+//           return updated;
+//         });
+//         setDragCountMap((prev) => {
+//           const updated = { ...prev };
+//           updated[finalDashboardName] = prev[activeTab];
+//           delete updated[activeTab];
+//           return updated;
+//         });
+//         setActiveTab(finalDashboardName);
+//         toast.info(`Dashboard name changed to "${finalDashboardName}" to avoid duplication.`);
+//       }
+//     }
+
+//     const savedData = {
+//       dashboard: { dashboardName: finalDashboardName, userId: userId ? parseInt(userId) : 0, userType: userType || '' },
+//       equityHubPlots: [],
+//       portfolioPlots: [],
+//     };
+
+//     generalPlots.forEach(({ label, symbol, companyName, graphType, uploadId, platform, type }) => {
+//       if (type === 'equity') {
+//         let finalSymbol = symbol;
+//         let finalCompany = companyName;
+
+//         if (!finalSymbol || !finalCompany) {
+//           const matched = savedStocks.find(
+//             (stock) => stock.symbol === finalSymbol || stock.graphType === graphType || stock.label === label
+//           );
+//           if (matched) {
+//             finalSymbol = finalSymbol || matched.symbol;
+//             finalCompany = finalCompany || matched.companyName;
+//           }
+//         }
+
+//         savedData.equityHubPlots.push({ symbol: finalSymbol, companyName: finalCompany, graphType: graphType || label });
+//       } else if (type === 'portfolio') {
+//         savedData.portfolioPlots.push({ uploadId, platform, graphType: label });
+//       }
+//     });
+
+//     try {
+//       const response = await fetch(`${API_BASE}/dashboard/save`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+//         body: JSON.stringify(savedData),
+//       });
+//       if (response.ok) {
+//         const result = await response.json();
+//         setHasUnsavedChanges(false);
+//         setShowSavedModal(true);
+//         setTimeout(() => setShowSavedModal(false), 2000);
+//       } else {
+//         toast.error('Failed to save dashboard');
+//       }
+//     } catch (err) {
+//       console.error('Save failed:', err);
+//       toast.error('Save failed');
+//     }
+//     setIsMenuOpen(false);
+//   };
+
+//   const handleDeleteDashboardAPI = async (dashboardName) => {
+//     if (hasUnsavedChanges) {
+//       setPendingTab(dashboardName);
+//       setShowUnsavedModal(true);
+//       return;
+//     }
+//     try {
+//       const token = localStorage.getItem('authToken');
+//       const response = await fetch(`${API_BASE}/dashboard/delete/${dashboardName}`, {
+//         method: 'DELETE',
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       if (!response.ok) throw new Error('Failed to delete dashboard');
+//       setTabs((prev) => prev.filter((tab) => tab !== dashboardName));
+//       setDroppedMap((prev) => {
+//         const updated = { ...prev };
+//         delete updated[dashboardName];
+//         return updated;
+//       });
+//       setDragCountMap((prev) => {
+//         const updated = { ...prev };
+//         delete updated[dashboardName];
+//         return updated;
+//       });
+//       if (activeTab === dashboardName) {
+//         const remainingTabs = tabs.filter((tab) => tab !== dashboardName);
+//         setActiveTab(remainingTabs[0] || '');
+//         const newTab = droppedMap[remainingTabs[0]] || { general: [] };
+//         setHasUnsavedChanges(newTab.general.length > 0);
+//       }
+//       toast.success('Dashboard deleted successfully');
+//       setIsMenuOpen(false);
+//     } catch (err) {
+//       console.error('Delete error:', err);
+//       toast.error('Failed to delete dashboard');
+//     }
+//   };
+
+//   const getUniqueCompanies = () => {
+//     const generalItems = droppedMap[activeTab]?.general || [];
+//     return [...new Set(generalItems.filter(item => item.companyName).map((item) => item.companyName))];
+//   };
+
+//   const isDashboardEmpty = () => {
+//     const currentTab = droppedMap[activeTab] || { general: [] };
+//     return currentTab.general.length === 0;
+//   };
+
+//   const getCachedData = (key) => {
+//     const cached = localStorage.getItem(key);
+//     if (!cached) return null;
+//     try {
+//       const { data, timestamp } = JSON.parse(cached);
+//       if (Date.now() - timestamp > CACHE_TTL) {
+//         localStorage.removeItem(key);
+//         return null;
+//       }
+//       return data;
+//     } catch (err) {
+//       setError("Failed to parse cached data.");
+//       console.error("Cache parse error:", err);
+//       return null;
+//     }
+//   };
+
+//   const setCachedData = (key, data) => {
+//     try {
+//       localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+//     } catch (err) {
+//       setError("Failed to cache data.");
+//       console.error("Cache set error:", err);
+//     }
+//   };
+
+//   const handleClearSearch = () => {
+//     setSearchQuery('');
+//     setResults([]);
+//     setError(null);
+//   };
+
+//   const handleLoginClick = () => setShowLoginModal(true);
+//   const handleCloseModal = () => setShowLoginModal(false);
+//   const handleLoginSuccess = () => {
+//     login();
+//     handleCloseModal();
+//   };
+
+//   const handleDeleteAccount = async () => {
+//     if (hasUnsavedChanges) {
+//       setPendingNavigation({ label: 'deleteAccount', path: '/' });
+//       setShowUnsavedModal(true);
+//       return;
+//     }
+//     const apiUrl =
+//       userType === "corporate"
+//         ? `${API_BASE}/corporate/delete-account`
+//         : `${API_BASE}/Userprofile/delete-account`;
+
+//     try {
+//       await axios.delete(apiUrl, {
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+//           "Content-Type": "application/json",
+//         },
+//       });
+//       toast.success("Account deleted successfully");
+//       localStorage.removeItem("authToken");
+//       localStorage.removeItem("userType");
+//       localStorage.removeItem("hasShownQuizPopup");
+//       logout();
+//       navigate("/");
+//       setShowDeleteModal(false);
+//     } catch (err) {
+//       toast.error(err.response?.data?.message || "Failed to delete account");
+//     }
+//   };
+
+//   const handleTabSwitch = (tab) => {
+//     if (hasUnsavedChanges && activeTab !== tab) {
+//       setPendingTab(tab);
+//       setShowUnsavedModal(true);
+//     } else {
+//       setActiveTab(tab);
+//       setIsMenuOpen(false);
+//       const currentTab = droppedMap[tab] || { general: [] };
+//       setHasUnsavedChanges(currentTab.general.length > 0);
+//     }
+//   };
+
+//   const handleConfirmNavigation = async () => {
+//     setShowUnsavedModal(false);
+//     if (pendingNavigation) {
+//       if (pendingNavigation.label === 'logout') {
+//         localStorage.removeItem('authToken');
+//         localStorage.removeItem('userType');
+//         localStorage.removeItem('userEmail');
+//         logout();
+//         toast.success("Logout successfully!");
+//         navigate('/');
+//       } else if (pendingNavigation.label === 'deleteAccount') {
+//         await handleDeleteAccount();
+//       } else if (pendingNavigation.label === 'addDashboard') {
+//         setShowModal(true);
+//         setIsMenuOpen(false);
+//       } else {
+//         await logActivity(`${pendingNavigation.label} tab clicked`);
+//         navigate(pendingNavigation.path);
+//       }
+//       setPendingNavigation(null);
+//     } else if (pendingTab) {
+//       setActiveTab(pendingTab);
+//       setPendingTab(null);
+//       setIsMenuOpen(false);
+//       const currentTab = droppedMap[pendingTab] || { general: [] };
+//       setHasUnsavedChanges(currentTab.general.length > 0);
+//     }
+//   };
+
+//   const handleCancelNavigation = () => {
+//     setShowUnsavedModal(false);
+//     setPendingNavigation(null);
+//     setPendingTab(null);
+//   };
+
+//   const handleSaveAndNavigate = async () => {
+//     await handleSaveDashboard();
+//     if (pendingNavigation || pendingTab) {
+//       handleConfirmNavigation();
+//     }
+//   };
+
+//   const navItems = (
+//     <ul className="flex flex-wrap items-center gap-6 bg-slate-900  px-4 py-3 md:bg-transparent md:p-0">
+//       <li>
+//         <Link
+//           to="/"
+//           onClick={(e) => {
+//             e.preventDefault();
+//             handleNavClick("Home", "/");
+//           }}
+//           className={`text-black dark:text-white font-semibold transition-all duration-300 
+//             ${isActive('/') ? 'text-blue-500  border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
+//             pb-2`}
+//           data-tour="home-link"
+//         >
+//           Home
+//         </Link>
+//       </li>
+//       <li
+//         id="portfolio-dropdown"
+//         className="relative"
+//         onMouseEnter={() => setIsPortfolioOpen(true)}
+//         onMouseLeave={() => setIsPortfolioOpen(false)}
+//         data-tour="portfolio-link"
+//       >
+//         <span
+//           onClick={handlePortfolioClick}
+//           className={`text-black dark:text-white font-semibold transition-all duration-300 cursor-pointer 
+//             ${isActive('/portDash') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
+//             pb-2`}
+//           data-tour="portfolio-link"
+//         >
+//           Portfolio
+//         </span>
+//         {isPortfolioOpen && (
+//           <ul
+//             className="absolute left-0 mt-2 w-48 bg-white text-black dark:text-white dark:bg-gray-800 rounded-md shadow-lg py-2 z-50 ring-1 ring-black ring-opacity-5"
+//             onMouseEnter={() => setIsPortfolioOpen(true)}
+//             onMouseLeave={() => setIsPortfolioOpen(false)}
+//           >
+//             <li>
+//               <Link
+//                 to="/portDash"
+//                 onClick={(e) => {
+//                   e.preventDefault();
+//                   if (hasUnsavedChanges) {
+//                     setPendingNavigation({ label: 'portfolio', path: '/portDash' });
+//                     setShowUnsavedModal(true);
+//                     return;
+//                   }
+//                   setIsPortfolioOpen(false);
+//                 }}
+//                 className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
+//                 data-tour="upload-portfolio"
+//               >
+//                 Upload File
+//               </Link>
+//             </li>
+//             <li>
+//               <Link
+//                 to="/portDash/my-portfolio"
+//                 onClick={(e) => {
+//                   e.preventDefault();
+//                   if (hasUnsavedChanges) {
+//                     setPendingNavigation({ label: 'portfolio', path: '/portDash/my-portfolio' });
+//                     setShowUnsavedModal(true);
+//                     return;
+//                   }
+//                   setIsPortfolioOpen(false);
+//                 }}
+//                 className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
+//                 data-tour="portfolio-saved"
+//               >
+//                 Saved Portfolio
+//               </Link>
+//             </li>
+//             <li>
+//               <Link
+//                 to="/portDash/resculpt-portfolio"
+//                 onClick={(e) => {
+//                   e.preventDefault();
+//                   if (hasUnsavedChanges) {
+//                     setPendingNavigation({ label: 'portfolio', path: '/portDash/resculpt-portfolio' });
+//                     setShowUnsavedModal(true);
+//                     return;
+//                   }
+//                   setIsPortfolioOpen(false);
+//                 }}
+//                 className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
+//                 data-tour="portfolio-recreate"
+//               >
+//                 Recreate Portfolio
+//               </Link>
+//             </li>
+//             <li>
+//               <Link
+//                 to="/portDash/customize-portfolio"
+//                 onClick={(e) => {
+//                   e.preventDefault();
+//                   if (hasUnsavedChanges) {
+//                     setPendingNavigation({ label: 'portfolio', path: '/portDash/customize-portfolio' });
+//                     setShowUnsavedModal(true);
+//                     return;
+//                   }
+//                   setIsPortfolioOpen(false);
+//                 }}
+//                 className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
+//                 data-tour="portfolio-create"
+//               >
+//                 BuildUrPortfolio
+//               </Link>
+//             </li>
+//           </ul>
+//         )}
+//       </li>
+//       <li>
+//         <Link
+//           to="/equityhub"
+//           onClick={(e) => {
+//             e.preventDefault();
+//             handleNavClick("Equity Hub", "/equityhub");
+//           }}
+//           className={`text-black dark:text-whitee font-semibold transition-all duration-300 
+//             ${isActive('/equityhub') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
+//             pb-2`}
+//           data-tour="equityhub-link"
+//         >
+//           Equity Insignts
+//         </Link>
+//       </li>
+//       <li>
+//         <Link
+//           to="/dashboard"
+//           onClick={handleDashboardClick}
+//           className={`text-black dark:text-white font-semibold transition-all duration-300 
+//             ${isActive('/dashboard') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
+//             pb-2`}
+//           data-tour="dashboard-link"
+//         >
+//           Research Panel
+//         </Link>
+//       </li>
+//       <li>
+//         <Link
+//           to="/about"
+//           onClick={(e) => {
+//             e.preventDefault();
+//             handleNavClick("About", "/about");
+//           }}
+//           className={`text-black dark:text-white font-semibold transition-all duration-300 
+//             ${isActive('/about') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
+//             pb-2`}
+//           data-tour="about-link"
+//         >
+//           About
+//         </Link>
+//       </li>
+//       <li className={isDisabled ? "pointer-events-none opacity-50" : ""}>
+//         <Link
+//           to="/plan"
+//           onClick={(e) => {
+//             if (isDisabled) {
+//               e.preventDefault();
+//               return;
+//             }
+//             e.preventDefault();
+//             handleNavClick("Subscription", "/plan");
+//           }}
+//           className={`text-black dark:text-white font-semibold transition-all duration-300 
+//             ${isActive('/plan') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
+//             pb-2`}
+//           data-tour="subscription-link"
+//         >
+//           Subscription
+//         </Link>
+//       </li>
+//     </ul>
+//   );
+
+//   return (
+//     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+//       <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans">
+//         <SidebarRight collapsed={collapsed} setCollapsed={setCollapsed} onItemClick={handleItemClick} />
+//         {showModal && (
+//           <AddNewModal onClose={() => setShowModal(false)} onCreateTab={handleNewDashboard} />
+//         )}
+//         <div
+//           className={`flex-1 transition-all duration-300 ease-in-out ${collapsed ? 'w-full' : 'sm:pr-64 xs:pr-56'
+//             } overflow-x-hidden`}
+//         >
+//           <header className="sticky top-0 z-50 w-full bg-white dark:bg-gray-800 shadow-md">
+//             <div className="max-w-7xl mx-auto flex justify-between items-center py-4 px-6">
+//               {/* <Link to="/" className="text-2xl font-bold text-blue-600 dark:text-blue-400 flex items-center relative">
+//                 <div style={{
+//                   display: 'inline-flex',
+//                   alignItems: 'flex-start',
+//                   gap: '0',
+//                   position: 'relative',
+//                 }}>
+//                   <span style={{
+//                     fontSize: '28px',
+//                     fontWeight: '800',
+//                     color: '#000000',
+//                     dark: { color: '#ffffff' },
+//                     letterSpacing: '0.05em',
+//                     textShadow: '1px 1px 6px rgba(0, 0, 0, 0.3)',
+//                   }}>
+//                     #CMD
+//                   </span>
+//                   <div style={{
+//                     display: 'inline-flex',
+//                     alignItems: 'center',
+//                     gap: '1px',
+//                     marginLeft: '-2px',
+//                   }}>
+//                     <span style={{
+//                       fontSize: '28px',
+//                       fontWeight: '800',
+//                       background: 'linear-gradient(45deg, #0e84f1, #12b8eb, #33D4FF)',
+//                       WebkitBackgroundClip: 'text',
+//                       backgroundClip: 'text',
+//                       color: 'transparent',
+//                       textShadow: '1px 1px 6px rgba(0, 0, 0, 0.25)',
+//                       lineHeight: '1.2',
+//                     }}>
+//                       A
+//                     </span>
+//                   </div>
+//                   <span style={{
+//                     position: 'absolute',
+//                     right: '-38px',
+//                     bottom: '16px',
+//                     backgroundColor: '#ffffff',
+//                     color: '#17b3f1ff',
+//                     fontSize: '12px',
+//                     fontWeight: 'bold',
+//                     padding: '2px 6px',
+//                     borderRadius: '4px',
+//                     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+//                     transform: 'rotate(12deg)',
+//                     whiteSpace: 'nowrap',
+//                     lineHeight: '1',
+//                   }}>
+//                     BETA
+//                   </span>
+//                 </div>
+//               </Link> */}
+//               <nav className="hidden lg:block">{navItems}</nav>
+//               <div className="lg:hidden">
+//                 <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-600 dark:text-gray-300">
+//                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+//                   </svg>
+//                 </button>
+//               </div>
+//               <div className="flex items-center gap-4">
+//                 {isLoggedIn ? (
+//                   <button
+//                     onClick={handleLogout}
+//                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+//                   >
+//                     Logout
+//                   </button>
+//                 ) : (
+//                   <button
+//                     onClick={handleLoginClick}
+//                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+//                     data-tour="login-button"
+//                   >
+//                     Login
+//                   </button>
+//                 )}
+//               </div>
+//             </div>
+//             {isMenuOpen && (
+//               <div className="lg:hidden bg-white dark:bg-gray-800 p-4 shadow-md">
+//                 {navItems}
+//               </div>
+//             )}
+//           </header>
+
+//           <div className="max-w-7xl mx-auto px-6 py-4">
+//             <div className="flex flex-wrap items-center gap-4 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+//               {tabs.map((tab) => (
+//                 <div key={tab} className="flex items-center bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-md">
+//                   {editingTab === tab ? (
+//                     <div className="flex items-center gap-2">
+//                       <input
+//                         type="text"
+//                         value={editedTabName}
+//                         onChange={(e) => setEditedTabName(e.target.value)}
+//                         onKeyDown={(e) => e.key === 'Enter' && handleRenameTab(tab, editedTabName)}
+//                         className="w-32 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+//                       />
+//                       <button
+//                         onClick={() => handleRenameTab(tab, editedTabName)}
+//                         className="text-gray-500 hover:text-blue-500"
+//                         title="Save"
+//                       >
+//                         <IoMdSave size={16} />
+//                       </button>
+//                     </div>
+//                   ) : (
+//                     <div className="flex items-center gap-2">
+//                       <button
+//                         onClick={() => handleTabSwitch(tab)}
+//                         className={`text-sm font-medium ${activeTab === tab ? 'text-blue-500' : 'text-gray-600 dark:text-gray-300'}`}
+//                       >
+//                         {tab}
+//                       </button>
+//                       <button
+//                         onClick={() => {
+//                           setEditingTab(tab);
+//                           setEditedTabName(tab);
+//                         }}
+//                         className="text-gray-500 hover:text-blue-500"
+//                         title="Rename"
+//                       >
+//                         <MdOutlineDriveFileRenameOutline size={16} />
+//                       </button>
+//                       <button
+//                         onClick={() => handleDeleteDashboardAPI(tab)}
+//                         className="text-gray-500 hover:text-red-500"
+//                         title="Delete"
+//                       >
+//                         <IoMdClose size={16} />
+//                       </button>
+//                     </div>
+//                   )}
+//                 </div>
+//               ))}
+//               <button
+//                 onClick={() => {
+//                   if (hasUnsavedChanges) {
+//                     setPendingNavigation({ label: 'addDashboard', path: null });
+//                     setShowUnsavedModal(true);
+//                     return;
+//                   }
+//                   setShowModal(true);
+//                   setIsMenuOpen(false);
+//                 }}
+//                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+//                 data-tour="dashboard-add"
+//               >
+//                 <MdOutlineDashboardCustomize size={16} /> Add Dashboard
+//               </button>
+//               <button
+//                 onClick={handleSaveDashboard}
+//                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+//                 data-tour="dashboard-save"
+//               >
+//                 <BiSolidSave size={16} /> Save
+//               </button>
+//               <button
+//                 onClick={(e) => {
+//                   e.preventDefault();
+//                   if (!isLoggedIn) {
+//                     toast.error('Login first to see your dashboards.');
+//                     return;
+//                   }
+//                   handleNavClick('Saved Dashboards', '/savedDashboard');
+//                 }}
+//                 className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm"
+//                 data-tour="dashboard-saved"
+//               >
+//                 <BiSolidSave size={16} /> Saved Dashboards
+//               </button>
+//             </div>
+//             {getUniqueCompanies().length > 0 ? (
+//               <div className="flex flex-wrap gap-2 items-center mb-6">
+//                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Selected Stocks:</span>
+//                 {getUniqueCompanies().map((companyName) => (
+//                   <div key={companyName} className="flex items-center gap-1 px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm">
+//                     <span className="truncate">{companyName}</span>
+//                     <button
+//                       onClick={() => handleClearCompany(companyName)}
+//                       className="text-gray-500 hover:text-red-500"
+//                       title="Remove"
+//                     >
+//                       <IoMdClose size={12} />
+//                     </button>
+//                   </div>
+//                 ))}
+//               </div>
+//             ) : (
+//               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">No stocks selected. Add stocks from the sidebar.</p>
+//             )}
+//           </div>
+
+//           {/* <AnimatePresence>
+//             {collapsed && isDashboardEmpty() && (
+//               <motion.div
+//                 initial={{ opacity: 0, y: -30 }}
+//                 animate={{ opacity: 1, y: 0 }}
+//                 exit={{ opacity: 0, y: -30 }}
+//                 transition={{ duration: 0.4 }}
+//                 className="text-center py-12 px-6 bg-white dark:bg-gray-800 rounded-xl shadow-md max-w-3xl mx-auto mt-8"
+//               >
+//                 <h2 className="text-xl font-bold text-gray-800 dark:text-white">Welcome to Your Dashboard</h2>
+//                 <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+//                   Open the sidebar and drag and drop your graph to get started!
+//                 </p>
+//                 <button
+//                   onClick={() => setCollapsed(false)}
+//                   className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all"
+//                 >
+//                   <GoSidebarExpand size={18} /> Open Sidebar
+//                 </button>
+//               </motion.div>
+//             )}
+//           </AnimatePresence> */}
+
+//           <main className="w-full h-auto mx-auto px-6 py-8 space-y-8">
+//             <section className="space-y-4">
+//               <div className="text-center">
+//                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Whiteboard</h2>
+//               </div>
+//               {/* <DroppableArea id="general">
+//                 {(() => {
+//                   const droppedItems = droppedMap?.[activeTab]?.general || [];
+//                   const visibleItems = getVisibleItems(droppedItems);
+//                   if (visibleItems.length === 0) {
+//                     return (
+//                       <div className="flex flex-col items-center justify-center py-16  px-4 dark:bg-gray-800 border-2 dark:text-gray-400">
+//                         <svg className="h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8v8m0 0h8m-8 0l8-8m4 8v-8m0 0H8m8 0l-8 8" />
+//                         </svg>
+//                         <p className="text-base font-medium">Drop or tap components here</p>
+//                       </div>
+//                     );
+//                   }
+
+//                   const firstRowItems = visibleItems.slice(0, 3);
+//                   const secondRowItems = visibleItems.slice(3);
+
+//                   return (
+//                     <div className="space-y-6">
+//                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+//                         {firstRowItems.map(({ label, symbol, companyName, id, uploadId, platform, type }, idx) => {
+//                           const ComponentMap = type === 'equity' ? equityHubMap : portfolioMap;
+//                           const Component = ComponentMap[label];
+//                           if (!Component) {
+//                             return (
+//                               <motion.div
+//                                 key={`general-${id}`}
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                 className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                               >
+//                                 <button
+//                                   onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                   className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                   aria-label="Delete component"
+//                                 >
+//                                   <IoMdClose size={20} />
+//                                 </button>
+//                                 <p className="text-red-500 text-sm">Component "{label}" not found</p>
+//                               </motion.div>
+//                             );
+//                           }
+//                           if (type === 'equity' && !symbol) {
+//                             return (
+//                               <motion.div
+//                                 key={`general-${id}`}
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                 className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                               >
+//                                 <button
+//                                   onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                   className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                   aria-label="Delete component"
+//                                 >
+//                                   <IoMdClose size={20} />
+//                                 </button>
+//                                 <p className="text-yellow-500 text-sm">Waiting for company selection for {label}</p>
+//                               </motion.div>
+//                             );
+//                           }
+//                           return (
+//                             <motion.div
+//                               key={`general-${id}`}
+//                               initial={{ opacity: 0, y: 20 }}
+//                               animate={{ opacity: 1, y: 0 }}
+//                               transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                               className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                             >
+//                               <button
+//                                 onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                 className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                 aria-label="Delete component"
+//                               >
+//                                 <IoMdClose size={20} />
+//                               </button>
+//                               <h3 className="text-base font-semibold mb-4 text-gray-800 dark:text-white truncate">
+//                                 {label} {companyName ? `(${companyName})` : platform ? `(${platform})` : ''}
+//                               </h3>
+//                               <div className="min-h-[250px] w-full overflow-hidden">
+//                                 {type === 'equity' ? (
+//                                   <Component symbol={symbol} key={`${id}-${symbol}`} />
+//                                 ) : (
+//                                   <GraphDataProvider>
+//                                     <Component uploadId={uploadId} key={`${id}-${uploadId}`} />
+//                                   </GraphDataProvider>
+//                                 )}
+//                               </div>
+//                             </motion.div>
+//                           );
+//                         })}
+//                       </div>
+//                       {secondRowItems.length > 0 && (
+//                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//                           {secondRowItems.map(({ label, symbol, companyName, id, uploadId, platform, type }, idx) => {
+//                             const ComponentMap = type === 'equity' ? equityHubMap : portfolioMap;
+//                             const Component = ComponentMap[label];
+//                             if (!Component) {
+//                               return (
+//                                 <motion.div
+//                                   key={`general-${id}`}
+//                                   initial={{ opacity: 0, y: 20 }}
+//                                   animate={{ opacity: 1, y: 0 }}
+//                                   transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                   className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                                 >
+//                                   <button
+//                                     onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                     className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                     aria-label="Delete component"
+//                                   >
+//                                     <IoMdClose size={20} />
+//                                   </button>
+//                                   <p className="text-red-500 text-sm">Component "{label}" not found</p>
+//                                 </motion.div>
+//                               );
+//                             }
+//                             if (type === 'equity' && !symbol) {
+//                               return (
+//                                 <motion.div
+//                                   key={`general-${id}`}
+//                                   initial={{ opacity: 0, y: 20 }}
+//                                   animate={{ opacity: 1, y: 0 }}
+//                                   transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                   className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                                 >
+//                                   <button
+//                                     onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                     className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                     aria-label="Delete component"
+//                                   >
+//                                     <IoMdClose size={20} />
+//                                   </button>
+//                                   <p className="text-yellow-500 text-sm">Waiting for company selection for {label}</p>
+//                                 </motion.div>
+//                               );
+//                             }
+//                             return (
+//                               <motion.div
+//                                 key={`general-${id}`}
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                 className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                               >
+//                                 <button
+//                                   onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                   className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                   aria-label="Delete component"
+//                                 >
+//                                   <IoMdClose size={20} />
+//                                 </button>
+//                                 <h3 className="text-base font-semibold mb-4 text-gray-800 dark:text-white truncate">
+//                                   {label} {companyName ? `(${companyName})` : platform ? `(${platform})` : ''}
+//                                 </h3>
+//                                 <div className="min-h-[250px] w-full overflow-hidden">
+//                                   {type === 'equity' ? (
+//                                     <Component symbol={symbol} key={`${id}-${symbol}`} />
+//                                   ) : (
+//                                     <GraphDataProvider>
+//                                       <Component uploadId={uploadId} key={`${id}-${uploadId}`} />
+//                                     </GraphDataProvider>
+//                                   )}
+//                                 </div>
+//                               </motion.div>
+//                             );
+//                           })}
+//                         </div>
+//                       )}
+//                     </div>
+//                   );
+//                 })()}
+//               </DroppableArea> */}
+
+
+//               <DroppableArea id="general">
+//                 {(() => {
+//                   const droppedItems = droppedMap?.[activeTab]?.general || [];
+//                   const visibleItems = getVisibleItems(droppedItems);
+//                   if (visibleItems.length === 0) {
+//                     return (
+//                       <div className="flex flex-col items-center justify-center py-16 min-h-[700px] px-4 dark:bg-gray-800 border-2 dark:text-gray-400">
+//                         <svg className="h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8v8m0 0h8m-8 0l8-8m4 8v-8m0 0H8m8 0l-8 8" />
+//                         </svg>
+//                         <p className="text-base font-medium">Drop or tap components here</p>
+//                       </div>
+//                     );
+//                   }
+
+//                   const firstRowItems = visibleItems.slice(0, 3);
+//                   const secondRowItems = visibleItems.slice(3);
+
+//                   return (
+//                     <div className="space-y-6">
+//                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+//                         {firstRowItems.map(({ label, symbol, companyName, id, uploadId, platform, type }, idx) => {
+//                           const ComponentMap = type === 'equity' ? equityHubMap : portfolioMap;
+//                           const Component = ComponentMap[label];
+//                           if (!Component) {
+//                             return (
+//                               <motion.div
+//                                 key={`general-${id}`}
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                 className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                               >
+//                                 <button
+//                                   onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                   className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                   aria-label="Delete component"
+//                                 >
+//                                   <IoMdClose size={20} />
+//                                 </button>
+//                                 <p className="text-red-500 text-sm">Component "{label}" not found</p>
+//                               </motion.div>
+//                             );
+//                           }
+//                           if (type === 'equity' && !symbol) {
+//                             return (
+//                               <motion.div
+//                                 key={`general-${id}`}
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                 className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                               >
+//                                 <button
+//                                   onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                   className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                   aria-label="Delete component"
+//                                 >
+//                                   <IoMdClose size={20} />
+//                                 </button>
+//                                 <p className="text-yellow-500 text-sm">Waiting for company selection for {label}</p>
+//                               </motion.div>
+//                             );
+//                           }
+//                           return (
+//                             <motion.div
+//                               key={`general-${id}`}
+//                               initial={{ opacity: 0, y: 20 }}
+//                               animate={{ opacity: 1, y: 0 }}
+//                               transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                               className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                             >
+//                               <button
+//                                 onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                 className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                 aria-label="Delete component"
+//                               >
+//                                 <IoMdClose size={20} />
+//                               </button>
+//                               <h3 className="text-base font-semibold mb-4 text-gray-800 dark:text-white truncate">
+//                                 {label} {companyName ? `(${companyName})` : platform ? `(${platform})` : ''}
+//                               </h3>
+//                               <div className="min-h-[350px] w-full overflow-hidden"> {/* Increased height from 250px to 350px */}
+//                                 {type === 'equity' ? (
+//                                   <Component symbol={symbol} key={`${id}-${symbol}`} />
+//                                 ) : (
+//                                   <GraphDataProvider>
+//                                     <Component uploadId={uploadId} key={`${id}-${uploadId}`} />
+//                                   </GraphDataProvider>
+//                                 )}
+//                               </div>
+//                             </motion.div>
+//                           );
+//                         })}
+//                       </div>
+//                       {secondRowItems.length > 0 && (
+//                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//                           {secondRowItems.map(({ label, symbol, companyName, id, uploadId, platform, type }, idx) => {
+//                             const ComponentMap = type === 'equity' ? equityHubMap : portfolioMap;
+//                             const Component = ComponentMap[label];
+//                             if (!Component) {
+//                               return (
+//                                 <motion.div
+//                                   key={`general-${id}`}
+//                                   initial={{ opacity: 0, y: 20 }}
+//                                   animate={{ opacity: 1, y: 0 }}
+//                                   transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                   className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                                 >
+//                                   <button
+//                                     onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                     className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                     aria-label="Delete component"
+//                                   >
+//                                     <IoMdClose size={20} />
+//                                   </button>
+//                                   <p className="text-red-500 text-sm">Component "{label}" not found</p>
+//                                 </motion.div>
+//                               );
+//                             }
+//                             if (type === 'equity' && !symbol) {
+//                               return (
+//                                 <motion.div
+//                                   key={`general-${id}`}
+//                                   initial={{ opacity: 0, y: 20 }}
+//                                   animate={{ opacity: 1, y: 0 }}
+//                                   transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                   className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                                 >
+//                                   <button
+//                                     onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                     className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                     aria-label="Delete component"
+//                                   >
+//                                     <IoMdClose size={20} />
+//                                   </button>
+//                                   <p className="text-yellow-500 text-sm">Waiting for company selection for {label}</p>
+//                                 </motion.div>
+//                               );
+//                             }
+//                             return (
+//                               <motion.div
+//                                 key={`general-${id}`}
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 transition={{ duration: 0.3, delay: idx * 0.1 }}
+//                                 className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+//                               >
+//                                 <button
+//                                   onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
+//                                   className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+//                                   aria-label="Delete component"
+//                                 >
+//                                   <IoMdClose size={20} />
+//                                 </button>
+//                                 <h3 className="text-base font-semibold mb-4 text-gray-800 dark:text-white truncate">
+//                                   {label} {companyName ? `(${companyName})` : platform ? `(${platform})` : ''}
+//                                 </h3>
+//                                 <div className="min-h-[350px] w-full overflow-hidden"> {/* Increased height from 250px to 350px */}
+//                                   {type === 'equity' ? (
+//                                     <Component symbol={symbol} key={`${id}-${symbol}`} />
+//                                   ) : (
+//                                     <GraphDataProvider>
+//                                       <Component uploadId={uploadId} key={`${id}-${uploadId}`} />
+//                                     </GraphDataProvider>
+//                                   )}
+//                                 </div>
+//                               </motion.div>
+//                             );
+//                           })}
+//                         </div>
+//                       )}
+//                     </div>
+//                   );
+//                 })()}
+//               </DroppableArea>
+//             </section>
+//           </main>
+//         </div>
+//         <SidebarRight collapsed={collapsed} setCollapsed={setCollapsed} onItemClick={handleItemClick} />
+//         {showModal && (
+//           <AddNewModal onClose={() => setShowModal(false)} onCreateTab={handleNewDashboard} />
+//         )}
+//         <DragStartModal
+//           isOpen={showDragModal}
+//           onClose={() => {
+//             setShowDragModal(false);
+//             setCurrentDragItem(null);
+//             setError(null);
+//           }}
+//           onSearch={handleStockSearch}
+//           searchTerm={searchTerm}
+//           setSearchTerm={(value) => {
+//             setSearchTerm(value);
+//             setError(null);
+//             if (value.length >= 2) handleStockSearch();
+//             else setSearchedStocks([]);
+//           }}
+//           searchedStocks={searchedStocks}
+//           onSelectItem={(item) => {
+//             if (currentDragItem) {
+//               setDroppedMap((prev) => {
+//                 const currentTab = prev[activeTab] || { general: [] };
+//                 const generalItems = currentTab.general || [];
+//                 const lastItemIndex = generalItems.findLastIndex(
+//                   (i) => i.label === currentDragItem.label && !i.symbol
+//                 );
+//                 if (lastItemIndex >= 0) {
+//                   const updatedItems = [...generalItems];
+//                   updatedItems[lastItemIndex] = {
+//                     ...updatedItems[lastItemIndex],
+//                     symbol: item.symbol,
+//                     companyName: item.companyName,
+//                     type: 'equity',
+//                   };
+//                   return { ...prev, [activeTab]: { ...currentTab, general: updatedItems } };
+//                 } else {
+//                   const newItem = {
+//                     label: currentDragItem.label,
+//                     symbol: item.symbol,
+//                     companyName: item.companyName,
+//                     graphType: currentDragItem.label,
+//                     id: `${currentDragItem.label}-${Date.now()}`,
+//                     type: 'equity',
+//                   };
+//                   return { ...prev, [activeTab]: { ...currentTab, general: [...generalItems, newItem] } };
+//                 }
+//               });
+//               setDragCountMap((prev) => ({
+//                 ...prev,
+//                 [activeTab]: {
+//                   ...prev[activeTab],
+//                   [currentDragItem.label]: (prev[activeTab]?.[currentDragItem.label] || 0) + 1,
+//                 },
+//               }));
+//             }
+//             setSearchTerm('');
+//             setSearchedStocks([]);
+//             setShowDragModal(false);
+//             setCurrentDragItem(null);
+//             setError(null);
+//             setHasUnsavedChanges(true);
+//           }}
+//           onClear={() => {
+//             setSearchTerm('');
+//             setSearchedStocks([]);
+//             setError(null);
+//           }}
+//           selectedCompany={null}
+//           error={error}
+//         />
+//         <PortfolioSelectModal
+//           isOpen={showPortfolioModal}
+//           onClose={() => {
+//             setShowPortfolioModal(false);
+//             setCurrentDragItem(null);
+//             setError(null);
+//           }}
+//           portfolios={savedPortfolios}
+//           onSelectPortfolio={handlePortfolioSelect}
+//           error={error}
+//         />
+//         {showUnsavedModal && (
+//           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+//             <div className="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full shadow-2xl">
+//               <button
+//                 onClick={handleCancelNavigation}
+//                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+//               >
+//                 <IoMdClose size={24} />
+//               </button>
+//               <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Unsaved Changes</h2>
+//               <p className="text-gray-600 dark:text-gray-300 mb-6">
+//                 You have unsaved changes. Would you like to save before leaving?
+//               </p>
+//               <div className="flex gap-4">
+//                 <button
+//                   onClick={handleSaveAndNavigate}
+//                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+//                 >
+//                   Save and Continue
+//                 </button>
+//                 <button
+//                   onClick={handleConfirmNavigation}
+//                   className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+//                 >
+//                   Leave Without Saving
+//                 </button>
+//                 <button
+//                   onClick={handleCancelNavigation}
+//                   className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+//                 >
+//                   Cancel
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+//         {showSavedModal && (
+//           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+//             <div className="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full shadow-2xl text-center">
+//               <h2 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-4">Dashboard Saved!</h2>
+//               <p className="text-gray-600 dark:text-gray-300">Your changes have been saved successfully.</p>
+//             </div>
+//           </div>
+//         )}
+//         {showDeleteModal && (
+//           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+//             <div className="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full shadow-2xl">
+//               <button
+//                 onClick={() => setShowDeleteModal(false)}
+//                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+//               >
+//                 <IoMdClose size={24} />
+//               </button>
+//               <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Confirm Deletion</h2>
+//               <p className="text-gray-600 dark:text-gray-300 mb-6">
+//                 Are you sure you want to delete your account? This action cannot be undone.
+//               </p>
+//               <div className="flex gap-4">
+//                 <button
+//                   onClick={handleDeleteAccount}
+//                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+//                 >
+//                   Delete
+//                 </button>
+//                 <button
+//                   onClick={() => setShowDeleteModal(false)}
+//                   className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+//                 >
+//                   Cancel
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </DndContext>
+//   );
+// };
+
+// export default DashBoard;
+
+
+
+
+
 
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -6087,6 +7774,11 @@ import { CiLogout } from "react-icons/ci";
 import { logActivity } from '../../services/api';
 import { IoMdArrowDropdown } from "react-icons/io";
 import axios from 'axios';
+import {
+  Panel,
+  PanelGroup,
+  PanelResizeHandle,
+} from "react-resizable-panels";
 
 Modal.setAppElement('#root');
 
@@ -6132,8 +7824,34 @@ const DashBoard = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isPortfolioOpen, setIsPortfolioOpen] = useState(false);
   const drawerRef = useRef(null);
+  const [resizing, setResizing] = useState(false);
 
   const isActive = (path) => location.pathname === path;
+
+  // Custom resize handle component
+  const ResizeHandle = ({ direction = "horizontal" }) => (
+    <div className={`
+      relative group transition-all duration-200
+      ${direction === "horizontal" ? "w-2 h-full mx-1" : "h-2 w-full my-1"}
+    `}>
+      <div className={`
+        absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 
+        rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200
+        ${resizing ? 'opacity-100 bg-gradient-to-r from-blue-400/40 to-purple-400/40' : ''}
+      `} />
+      <div className={`
+        absolute inset-0 flex items-center justify-center
+        ${direction === "horizontal" ? "flex-col" : "flex-row"}
+      `}>
+        <div className={`
+          bg-gradient-to-r from-blue-500 to-purple-500 rounded-full
+          transition-all duration-200 group-hover:scale-110
+          ${direction === "horizontal" ? "w-1 h-8" : "h-1 w-8"}
+          ${resizing ? 'scale-110 bg-gradient-to-r from-blue-600 to-purple-600' : ''}
+        `} />
+      </div>
+    </div>
+  );
 
   const handleNavClick = async (label, path) => {
     if (hasUnsavedChanges) {
@@ -6804,9 +8522,8 @@ const DashBoard = () => {
       handleConfirmNavigation();
     }
   };
-
   const navItems = (
-    <ul className="flex flex-wrap items-center gap-6 bg-slate-900  px-4 py-3 md:bg-transparent md:p-0">
+    <ul className="flex flex-wrap items-center gap-8 px-6 py-4">
       <li>
         <Link
           to="/"
@@ -6814,14 +8531,25 @@ const DashBoard = () => {
             e.preventDefault();
             handleNavClick("Home", "/");
           }}
-          className={`text-black dark:text-white font-semibold transition-all duration-300 
-            ${isActive('/') ? 'text-blue-500  border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
-            pb-2`}
+          className={`
+            relative font-semibold text-lg transition-all duration-300 
+            ${isActive('/')
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400'
+            }
+            group
+          `}
           data-tour="home-link"
         >
           Home
+          <span className={`
+            absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 
+            transition-all duration-300 group-hover:w-full
+            ${isActive('/') ? 'w-full' : ''}
+          `} />
         </Link>
       </li>
+
       <li
         id="portfolio-dropdown"
         className="relative"
@@ -6831,16 +8559,31 @@ const DashBoard = () => {
       >
         <span
           onClick={handlePortfolioClick}
-          className={`text-black dark:text-white font-semibold transition-all duration-300 cursor-pointer 
-            ${isActive('/portDash') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
-            pb-2`}
+          className={`
+            relative font-semibold text-lg transition-all duration-300 cursor-pointer 
+            ${isActive('/portDash')
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400'
+            }
+            group
+          `}
           data-tour="portfolio-link"
         >
           Portfolio
+          <IoMdArrowDropdown className="inline-block ml-1" />
+          <span className={`
+            absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 
+            transition-all duration-300 group-hover:w-full
+            ${isActive('/portDash') ? 'w-full' : ''}
+          `} />
         </span>
+
         {isPortfolioOpen && (
-          <ul
-            className="absolute left-0 mt-2 w-48 bg-white text-black dark:text-white dark:bg-gray-800 rounded-md shadow-lg py-2 z-50 ring-1 ring-black ring-opacity-5"
+          <motion.ul
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute left-0 mt-3 w-56 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-3 z-50"
             onMouseEnter={() => setIsPortfolioOpen(true)}
             onMouseLeave={() => setIsPortfolioOpen(false)}
           >
@@ -6856,9 +8599,10 @@ const DashBoard = () => {
                   }
                   setIsPortfolioOpen(false);
                 }}
-                className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
+                className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group"
                 data-tour="upload-portfolio"
               >
+                <FaBriefcase className="mr-3 text-blue-500 group-hover:scale-110 transition-transform" />
                 Upload File
               </Link>
             </li>
@@ -6874,9 +8618,10 @@ const DashBoard = () => {
                   }
                   setIsPortfolioOpen(false);
                 }}
-                className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
+                className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group"
                 data-tour="portfolio-saved"
               >
+                <BiSolidSave className="mr-3 text-green-500 group-hover:scale-110 transition-transform" />
                 Saved Portfolio
               </Link>
             </li>
@@ -6892,9 +8637,10 @@ const DashBoard = () => {
                   }
                   setIsPortfolioOpen(false);
                 }}
-                className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
+                className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group"
                 data-tour="portfolio-recreate"
               >
+                <FaChartLine className="mr-3 text-purple-500 group-hover:scale-110 transition-transform" />
                 Recreate Portfolio
               </Link>
             </li>
@@ -6910,15 +8656,17 @@ const DashBoard = () => {
                   }
                   setIsPortfolioOpen(false);
                 }}
-                className="block px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-blue-500"
+                className="flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group"
                 data-tour="portfolio-create"
               >
+                <MdOutlineDashboardCustomize className="mr-3 text-orange-500 group-hover:scale-110 transition-transform" />
                 BuildUrPortfolio
               </Link>
             </li>
-          </ul>
+          </motion.ul>
         )}
       </li>
+
       <li>
         <Link
           to="/equityhub"
@@ -6926,26 +8674,48 @@ const DashBoard = () => {
             e.preventDefault();
             handleNavClick("Equity Hub", "/equityhub");
           }}
-          className={`text-black dark:text-whitee font-semibold transition-all duration-300 
-            ${isActive('/equityhub') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
-            pb-2`}
+          className={`
+            relative font-semibold text-lg transition-all duration-300 
+            ${isActive('/equityhub')
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400'
+            }
+            group
+          `}
           data-tour="equityhub-link"
         >
-          Equity Insignts
+          Equity Insights
+          <span className={`
+            absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 
+            transition-all duration-300 group-hover:w-full
+            ${isActive('/equityhub') ? 'w-full' : ''}
+          `} />
         </Link>
       </li>
+
       <li>
         <Link
           to="/dashboard"
           onClick={handleDashboardClick}
-          className={`text-black dark:text-white font-semibold transition-all duration-300 
-            ${isActive('/dashboard') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
-            pb-2`}
+          className={`
+            relative font-semibold text-lg transition-all duration-300 
+            ${isActive('/dashboard')
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400'
+            }
+            group
+          `}
           data-tour="dashboard-link"
         >
           Research Panel
+          <span className={`
+            absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 
+            transition-all duration-300 group-hover:w-full
+            ${isActive('/dashboard') ? 'w-full' : ''}
+          `} />
         </Link>
       </li>
+
       <li>
         <Link
           to="/about"
@@ -6953,14 +8723,25 @@ const DashBoard = () => {
             e.preventDefault();
             handleNavClick("About", "/about");
           }}
-          className={`text-black dark:text-white font-semibold transition-all duration-300 
-            ${isActive('/about') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
-            pb-2`}
+          className={`
+            relative font-semibold text-lg transition-all duration-300 
+            ${isActive('/about')
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400'
+            }
+            group
+          `}
           data-tour="about-link"
         >
           About
+          <span className={`
+            absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 
+            transition-all duration-300 group-hover:w-full
+            ${isActive('/about') ? 'w-full' : ''}
+          `} />
         </Link>
       </li>
+
       <li className={isDisabled ? "pointer-events-none opacity-50" : ""}>
         <Link
           to="/plan"
@@ -6972,12 +8753,22 @@ const DashBoard = () => {
             e.preventDefault();
             handleNavClick("Subscription", "/plan");
           }}
-          className={`text-black dark:text-white font-semibold transition-all duration-300 
-            ${isActive('/plan') ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-800 hover:text-white'} 
-            pb-2`}
+          className={`
+            relative font-semibold text-lg transition-all duration-300 
+            ${isActive('/plan')
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400'
+            }
+            group
+          `}
           data-tour="subscription-link"
         >
           Subscription
+          <span className={`
+            absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 
+            transition-all duration-300 group-hover:w-full
+            ${isActive('/plan') ? 'w-full' : ''}
+          `} />
         </Link>
       </li>
     </ul>
@@ -6985,110 +8776,74 @@ const DashBoard = () => {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans">
+      <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10 text-gray-900 dark:text-gray-100 font-sans">
         <SidebarRight collapsed={collapsed} setCollapsed={setCollapsed} onItemClick={handleItemClick} />
+
         {showModal && (
           <AddNewModal onClose={() => setShowModal(false)} onCreateTab={handleNewDashboard} />
         )}
-        <div
-          className={`flex-1 transition-all duration-300 ease-in-out ${collapsed ? 'w-full' : 'sm:pr-64 xs:pr-56'
-            } overflow-x-hidden`}
-        >
-          <header className="sticky top-0 z-50 w-full bg-white dark:bg-gray-800 shadow-md">
+
+        <div className={`flex-1 transition-all duration-300 ease-in-out ${collapsed ? 'w-full' : 'sm:pr-64 xs:pr-56'} overflow-x-hidden`}>
+          {/* Enhanced Header */}
+          <header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
             <div className="max-w-7xl mx-auto flex justify-between items-center py-4 px-6">
-              {/* <Link to="/" className="text-2xl font-bold text-blue-600 dark:text-blue-400 flex items-center relative">
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'flex-start',
-                  gap: '0',
-                  position: 'relative',
-                }}>
-                  <span style={{
-                    fontSize: '28px',
-                    fontWeight: '800',
-                    color: '#000000',
-                    dark: { color: '#ffffff' },
-                    letterSpacing: '0.05em',
-                    textShadow: '1px 1px 6px rgba(0, 0, 0, 0.3)',
-                  }}>
-                    #CMD
-                  </span>
-                  <div style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '1px',
-                    marginLeft: '-2px',
-                  }}>
-                    <span style={{
-                      fontSize: '28px',
-                      fontWeight: '800',
-                      background: 'linear-gradient(45deg, #0e84f1, #12b8eb, #33D4FF)',
-                      WebkitBackgroundClip: 'text',
-                      backgroundClip: 'text',
-                      color: 'transparent',
-                      textShadow: '1px 1px 6px rgba(0, 0, 0, 0.25)',
-                      lineHeight: '1.2',
-                    }}>
-                      A
-                    </span>
-                  </div>
-                  <span style={{
-                    position: 'absolute',
-                    right: '-38px',
-                    bottom: '16px',
-                    backgroundColor: '#ffffff',
-                    color: '#17b3f1ff',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
-                    transform: 'rotate(12deg)',
-                    whiteSpace: 'nowrap',
-                    lineHeight: '1',
-                  }}>
-                    BETA
-                  </span>
-                </div>
-              </Link> */}
+
+
               <nav className="hidden lg:block">{navItems}</nav>
-              <div className="lg:hidden">
-                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-600 dark:text-gray-300">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                </button>
-              </div>
+
               <div className="flex items-center gap-4">
                 {isLoggedIn ? (
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                    className="px-6 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-full hover:from-red-600 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold"
                   >
+                    <CiLogout className="inline-block mr-2" />
                     Logout
                   </button>
                 ) : (
                   <button
                     onClick={handleLoginClick}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-semibold"
                     data-tour="login-button"
                   >
                     Login
                   </button>
                 )}
               </div>
-            </div>
-            {isMenuOpen && (
-              <div className="lg:hidden bg-white dark:bg-gray-800 p-4 shadow-md">
-                {navItems}
+
+              <div className="lg:hidden">
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
               </div>
-            )}
+            </div>
+
+            <AnimatePresence>
+              {isMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="lg:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-gray-200/50 dark:border-gray-700/50"
+                >
+                  <div className="px-6 py-4">
+                    {navItems}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </header>
 
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex flex-wrap items-center gap-4 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+          {/* Enhanced Dashboard Controls */}
+          <div className="max-w-7xl mx-auto px-6 py-6">
+            <div className="flex flex-wrap items-center gap-4 mb-6 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 border border-gray-200/50 dark:border-gray-700/50">
               {tabs.map((tab) => (
-                <div key={tab} className="flex items-center bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-md">
+                <div key={tab} className="flex items-center bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-800 px-4 py-2 rounded-xl border border-blue-200/50 dark:border-gray-600 shadow-sm">
                   {editingTab === tab ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -7096,21 +8851,25 @@ const DashBoard = () => {
                         value={editedTabName}
                         onChange={(e) => setEditedTabName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleRenameTab(tab, editedTabName)}
-                        className="w-32 px-2 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-32 px-3 py-1 bg-white dark:bg-gray-800 border border-blue-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        autoFocus
                       />
                       <button
                         onClick={() => handleRenameTab(tab, editedTabName)}
-                        className="text-gray-500 hover:text-blue-500"
+                        className="p-1 text-green-500 hover:text-green-600 transition-colors"
                         title="Save"
                       >
-                        <IoMdSave size={16} />
+                        <IoMdSave size={18} />
                       </button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleTabSwitch(tab)}
-                        className={`text-sm font-medium ${activeTab === tab ? 'text-blue-500' : 'text-gray-600 dark:text-gray-300'}`}
+                        className={`text-sm font-semibold transition-all duration-200 ${activeTab === tab
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-blue-500'
+                          }`}
                       >
                         {tab}
                       </button>
@@ -7119,14 +8878,14 @@ const DashBoard = () => {
                           setEditingTab(tab);
                           setEditedTabName(tab);
                         }}
-                        className="text-gray-500 hover:text-blue-500"
+                        className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
                         title="Rename"
                       >
                         <MdOutlineDriveFileRenameOutline size={16} />
                       </button>
                       <button
                         onClick={() => handleDeleteDashboardAPI(tab)}
-                        className="text-gray-500 hover:text-red-500"
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                         title="Delete"
                       >
                         <IoMdClose size={16} />
@@ -7135,453 +8894,420 @@ const DashBoard = () => {
                   )}
                 </div>
               ))}
-              <button
-                onClick={() => {
-                  if (hasUnsavedChanges) {
-                    setPendingNavigation({ label: 'addDashboard', path: null });
-                    setShowUnsavedModal(true);
-                    return;
-                  }
-                  setShowModal(true);
-                  setIsMenuOpen(false);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                data-tour="dashboard-add"
-              >
-                <MdOutlineDashboardCustomize size={16} /> Add Dashboard
-              </button>
-              <button
-                onClick={handleSaveDashboard}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                data-tour="dashboard-save"
-              >
-                <BiSolidSave size={16} /> Save
-              </button>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (!isLoggedIn) {
-                    toast.error('Login first to see your dashboards.');
-                    return;
-                  }
-                  handleNavClick('Saved Dashboards', '/savedDashboard');
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm"
-                data-tour="dashboard-saved"
-              >
-                <BiSolidSave size={16} /> Saved Dashboards
-              </button>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    if (hasUnsavedChanges) {
+                      setPendingNavigation({ label: 'addDashboard', path: null });
+                      setShowUnsavedModal(true);
+                      return;
+                    }
+                    setShowModal(true);
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm font-semibold"
+                  data-tour="dashboard-add"
+                >
+                  <MdOutlineDashboardCustomize size={18} /> Add Dashboard
+                </button>
+
+                <button
+                  onClick={handleSaveDashboard}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm font-semibold"
+                  data-tour="dashboard-save"
+                >
+                  <BiSolidSave size={18} /> Save
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (!isLoggedIn) {
+                      toast.error('Login first to see your dashboards.');
+                      return;
+                    }
+                    handleNavClick('Saved Dashboards', '/savedDashboard');
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-full hover:from-gray-600 hover:to-gray-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm font-semibold"
+                  data-tour="dashboard-saved"
+                >
+                  <BiSolidSave size={18} /> Saved Dashboards
+                </button>
+              </div>
             </div>
+
+            {/* Selected Stocks */}
             {getUniqueCompanies().length > 0 ? (
-              <div className="flex flex-wrap gap-2 items-center mb-6">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Selected Stocks:</span>
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-wrap gap-3 items-center mb-6 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-700/50"
+              >
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 px-3 py-1 rounded-full">
+                  Selected Stocks:
+                </span>
                 {getUniqueCompanies().map((companyName) => (
-                  <div key={companyName} className="flex items-center gap-1 px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded-full text-sm">
-                    <span className="truncate">{companyName}</span>
+                  <motion.div
+                    key={companyName}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-800 rounded-full border border-blue-200/50 dark:border-gray-600 shadow-sm"
+                  >
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate max-w-[120px]">
+                      {companyName}
+                    </span>
                     <button
                       onClick={() => handleClearCompany(companyName)}
-                      className="text-gray-500 hover:text-red-500"
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
                       title="Remove"
                     >
-                      <IoMdClose size={12} />
+                      <IoMdClose size={14} />
                     </button>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">No stocks selected. Add stocks from the sidebar.</p>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-gray-500 dark:text-gray-400 mb-6 text-center py-4 bg-white/30 dark:bg-gray-800/30 rounded-xl border border-dashed border-gray-300 dark:border-gray-600"
+              >
+                No stocks selected. Add stocks from the sidebar to get started!
+              </motion.p>
             )}
           </div>
 
-          {/* <AnimatePresence>
-            {collapsed && isDashboardEmpty() && (
-              <motion.div
-                initial={{ opacity: 0, y: -30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.4 }}
-                className="text-center py-12 px-6 bg-white dark:bg-gray-800 rounded-xl shadow-md max-w-3xl mx-auto mt-8"
-              >
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Welcome to Your Dashboard</h2>
-                <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                  Open the sidebar and drag and drop your graph to get started!
-                </p>
-                <button
-                  onClick={() => setCollapsed(false)}
-                  className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all"
-                >
-                  <GoSidebarExpand size={18} /> Open Sidebar
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence> */}
-
-          <main className="w-full h-auto mx-auto px-6 py-8 space-y-8">
-            <section className="space-y-4">
+          {/* Enhanced Whiteboard Area */}
+          <main className="w-full h-auto mx-auto px-6 pb-8 space-y-8">
+            <section className="space-y-6">
               <div className="text-center">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Whiteboard</h2>
+                <motion.h2
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
+                >
+                  Interactive Whiteboard
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-gray-600 dark:text-gray-400 mt-2"
+                >
+                  Drag components from the sidebar and resize plots using the handles
+                </motion.p>
               </div>
-              {/* <DroppableArea id="general">
-                {(() => {
-                  const droppedItems = droppedMap?.[activeTab]?.general || [];
-                  const visibleItems = getVisibleItems(droppedItems);
-                  if (visibleItems.length === 0) {
-                    return (
-                      <div className="flex flex-col items-center justify-center py-16  px-4 dark:bg-gray-800 border-2 dark:text-gray-400">
-                        <svg className="h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8v8m0 0h8m-8 0l8-8m4 8v-8m0 0H8m8 0l-8 8" />
-                        </svg>
-                        <p className="text-base font-medium">Drop or tap components here</p>
-                      </div>
-                    );
-                  }
-
-                  const firstRowItems = visibleItems.slice(0, 3);
-                  const secondRowItems = visibleItems.slice(3);
-
-                  return (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {firstRowItems.map(({ label, symbol, companyName, id, uploadId, platform, type }, idx) => {
-                          const ComponentMap = type === 'equity' ? equityHubMap : portfolioMap;
-                          const Component = ComponentMap[label];
-                          if (!Component) {
-                            return (
-                              <motion.div
-                                key={`general-${id}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                              >
-                                <button
-                                  onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                  aria-label="Delete component"
-                                >
-                                  <IoMdClose size={20} />
-                                </button>
-                                <p className="text-red-500 text-sm">Component "{label}" not found</p>
-                              </motion.div>
-                            );
-                          }
-                          if (type === 'equity' && !symbol) {
-                            return (
-                              <motion.div
-                                key={`general-${id}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                              >
-                                <button
-                                  onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                  aria-label="Delete component"
-                                >
-                                  <IoMdClose size={20} />
-                                </button>
-                                <p className="text-yellow-500 text-sm">Waiting for company selection for {label}</p>
-                              </motion.div>
-                            );
-                          }
-                          return (
-                            <motion.div
-                              key={`general-${id}`}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3, delay: idx * 0.1 }}
-                              className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                            >
-                              <button
-                                onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                aria-label="Delete component"
-                              >
-                                <IoMdClose size={20} />
-                              </button>
-                              <h3 className="text-base font-semibold mb-4 text-gray-800 dark:text-white truncate">
-                                {label} {companyName ? `(${companyName})` : platform ? `(${platform})` : ''}
-                              </h3>
-                              <div className="min-h-[250px] w-full overflow-hidden">
-                                {type === 'equity' ? (
-                                  <Component symbol={symbol} key={`${id}-${symbol}`} />
-                                ) : (
-                                  <GraphDataProvider>
-                                    <Component uploadId={uploadId} key={`${id}-${uploadId}`} />
-                                  </GraphDataProvider>
-                                )}
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                      {secondRowItems.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {secondRowItems.map(({ label, symbol, companyName, id, uploadId, platform, type }, idx) => {
-                            const ComponentMap = type === 'equity' ? equityHubMap : portfolioMap;
-                            const Component = ComponentMap[label];
-                            if (!Component) {
-                              return (
-                                <motion.div
-                                  key={`general-${id}`}
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                  className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                                >
-                                  <button
-                                    onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                    className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                    aria-label="Delete component"
-                                  >
-                                    <IoMdClose size={20} />
-                                  </button>
-                                  <p className="text-red-500 text-sm">Component "{label}" not found</p>
-                                </motion.div>
-                              );
-                            }
-                            if (type === 'equity' && !symbol) {
-                              return (
-                                <motion.div
-                                  key={`general-${id}`}
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                  className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                                >
-                                  <button
-                                    onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                    className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                    aria-label="Delete component"
-                                  >
-                                    <IoMdClose size={20} />
-                                  </button>
-                                  <p className="text-yellow-500 text-sm">Waiting for company selection for {label}</p>
-                                </motion.div>
-                              );
-                            }
-                            return (
-                              <motion.div
-                                key={`general-${id}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                              >
-                                <button
-                                  onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                  aria-label="Delete component"
-                                >
-                                  <IoMdClose size={20} />
-                                </button>
-                                <h3 className="text-base font-semibold mb-4 text-gray-800 dark:text-white truncate">
-                                  {label} {companyName ? `(${companyName})` : platform ? `(${platform})` : ''}
-                                </h3>
-                                <div className="min-h-[250px] w-full overflow-hidden">
-                                  {type === 'equity' ? (
-                                    <Component symbol={symbol} key={`${id}-${symbol}`} />
-                                  ) : (
-                                    <GraphDataProvider>
-                                      <Component uploadId={uploadId} key={`${id}-${uploadId}`} />
-                                    </GraphDataProvider>
-                                  )}
-                                </div>
-                              </motion.div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-              </DroppableArea> */}
-
 
               <DroppableArea id="general">
                 {(() => {
                   const droppedItems = droppedMap?.[activeTab]?.general || [];
                   const visibleItems = getVisibleItems(droppedItems);
+
                   if (visibleItems.length === 0) {
                     return (
-                      <div className="flex flex-col items-center justify-center py-16 min-h-[700px] px-4 dark:bg-gray-800 border-2 dark:text-gray-400">
-                        <svg className="h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8v8m0 0h8m-8 0l8-8m4 8v-8m0 0H8m8 0l-8 8" />
-                        </svg>
-                        <p className="text-base font-medium">Drop or tap components here</p>
-                      </div>
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex flex-col items-center justify-center py-20 min-h-[600px] px-4 bg-gradient-to-br from-white/50 to-blue-50/30 dark:from-gray-800/50 dark:to-blue-900/10 rounded-3xl border-2 border-dashed border-blue-300 dark:border-blue-700/50 shadow-inner"
+                      >
+                        <motion.div
+                          animate={{
+                            y: [0, -10, 0],
+                            rotate: [0, 5, -5, 0]
+                          }}
+                          transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                          }}
+                          className="mb-6"
+                        >
+                          <svg className="h-20 w-20 text-blue-400/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 8v8m0 0h8m-8 0l8-8m4 8v-8m0 0H8m8 0l-8 8" />
+                          </svg>
+                        </motion.div>
+                        <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                          Your Whiteboard Awaits!
+                        </h3>
+                        <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+                          Drag and drop components from the sidebar to start building your dashboard.
+                          Resize plots using the visible handles for optimal layout.
+                        </p>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setCollapsed(false)}
+                          className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
+                        >
+                          <GoSidebarExpand size={20} /> Open Sidebar
+                        </motion.button>
+                      </motion.div>
                     );
                   }
 
-                  const firstRowItems = visibleItems.slice(0, 3);
-                  const secondRowItems = visibleItems.slice(3);
+                  const renderPlot = (plotItem, index, allItems) => {
+                    const { label, symbol, companyName, id, uploadId, platform, type } = plotItem;
+                    const ComponentMap = type === 'equity' ? equityHubMap : portfolioMap;
+                    const Component = ComponentMap[label];
+
+                    if (!Component) {
+                      return (
+                        <motion.div
+                          key={`general-${id}`}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          className="relative bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-red-200 dark:border-red-800/50 h-full"
+                        >
+                          <button
+                            onClick={() => handleDeleteComponent(allItems.findIndex((item) => item.id === id))}
+                            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 transition-all duration-200 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
+                            aria-label="Delete component"
+                          >
+                            <IoMdClose size={18} />
+                          </button>
+                          <div className="text-center py-8">
+                            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <IoMdClose className="text-red-500 text-xl" />
+                            </div>
+                            <p className="text-red-500 font-semibold">Component "{label}" not found</p>
+                          </div>
+                        </motion.div>
+                      );
+                    }
+
+                    if (type === 'equity' && !symbol) {
+                      return (
+                        <motion.div
+                          key={`general-${id}`}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          className="relative bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-yellow-200 dark:border-yellow-800/50 h-full"
+                        >
+                          <button
+                            onClick={() => handleDeleteComponent(allItems.findIndex((item) => item.id === id))}
+                            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-red-500 transition-all duration-200 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
+                            aria-label="Delete component"
+                          >
+                            <IoMdClose size={18} />
+                          </button>
+                          <div className="text-center py-8">
+                            <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <svg className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <p className="text-yellow-600 dark:text-yellow-400 font-semibold">Waiting for company selection</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">for {label}</p>
+                          </div>
+                        </motion.div>
+                      );
+                    }
+
+                    return (
+                      <motion.div
+                        key={`general-${id}`}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700 h-full group"
+                      >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-600 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-800 rounded-t-2xl">
+                          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate flex items-center gap-2">
+                            <span className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></span>
+                            {label}
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {companyName ? `(${companyName})` : platform ? `(${platform})` : ''}
+                            </span>
+                          </h3>
+                          <button
+                            onClick={() => handleDeleteComponent(allItems.findIndex((item) => item.id === id))}
+                            className="p-1.5 text-gray-400 hover:text-red-500 transition-all duration-200 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100"
+                            aria-label="Delete component"
+                          >
+                            <IoMdClose size={16} />
+                          </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-4 min-h-[400px]">
+                          {type === 'equity' ? (
+                            <Component symbol={symbol} key={`${id}-${symbol}`} />
+                          ) : (
+                            <GraphDataProvider>
+                              <Component uploadId={uploadId} key={`${id}-${uploadId}`} />
+                            </GraphDataProvider>
+                          )}
+                        </div>
+
+                        {/* Resize Indicator */}
+                        <div className="absolute inset-0 border-2 border-transparent group-hover:border-blue-300/50 rounded-2xl pointer-events-none transition-all duration-300" />
+                      </motion.div>
+                    );
+                  };
+
+                  const firstThree = visibleItems.slice(0, 3);
+                  const remaining = visibleItems.slice(3);
+                  const hasRemaining = remaining.length > 0;
 
                   return (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {firstRowItems.map(({ label, symbol, companyName, id, uploadId, platform, type }, idx) => {
-                          const ComponentMap = type === 'equity' ? equityHubMap : portfolioMap;
-                          const Component = ComponentMap[label];
-                          if (!Component) {
-                            return (
-                              <motion.div
-                                key={`general-${id}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                              >
-                                <button
-                                  onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                  aria-label="Delete component"
+                    <PanelGroup
+                      direction={hasRemaining ? "vertical" : "horizontal"}
+                      className="min-h-[800px] rounded-2xl bg-gradient-to-br from-white/30 to-blue-50/20 dark:from-gray-800/30 dark:to-blue-900/10 border border-gray-200/50 dark:border-gray-700/50 shadow-lg backdrop-blur-sm"
+                      onLayout={() => setResizing(false)}
+                    >
+                      <Panel defaultSize={hasRemaining ? 50 : 100} minSize={30}>
+                        <PanelGroup direction="horizontal">
+                          {firstThree.map((item, idx) => (
+                            <React.Fragment key={`first-${item.id}`}>
+                              {idx > 0 && (
+                                <PanelResizeHandle
+                                  onDragging={setResizing}
+                                  className="relative group"
                                 >
-                                  <IoMdClose size={20} />
-                                </button>
-                                <p className="text-red-500 text-sm">Component "{label}" not found</p>
-                              </motion.div>
-                            );
-                          }
-                          if (type === 'equity' && !symbol) {
-                            return (
-                              <motion.div
-                                key={`general-${id}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                              >
-                                <button
-                                  onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                  aria-label="Delete component"
-                                >
-                                  <IoMdClose size={20} />
-                                </button>
-                                <p className="text-yellow-500 text-sm">Waiting for company selection for {label}</p>
-                              </motion.div>
-                            );
-                          }
-                          return (
-                            <motion.div
-                              key={`general-${id}`}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3, delay: idx * 0.1 }}
-                              className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                            >
-                              <button
-                                onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                aria-label="Delete component"
-                              >
-                                <IoMdClose size={20} />
-                              </button>
-                              <h3 className="text-base font-semibold mb-4 text-gray-800 dark:text-white truncate">
-                                {label} {companyName ? `(${companyName})` : platform ? `(${platform})` : ''}
-                              </h3>
-                              <div className="min-h-[350px] w-full overflow-hidden"> {/* Increased height from 250px to 350px */}
-                                {type === 'equity' ? (
-                                  <Component symbol={symbol} key={`${id}-${symbol}`} />
-                                ) : (
-                                  <GraphDataProvider>
-                                    <Component uploadId={uploadId} key={`${id}-${uploadId}`} />
-                                  </GraphDataProvider>
-                                )}
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                      {secondRowItems.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {secondRowItems.map(({ label, symbol, companyName, id, uploadId, platform, type }, idx) => {
-                            const ComponentMap = type === 'equity' ? equityHubMap : portfolioMap;
-                            const Component = ComponentMap[label];
-                            if (!Component) {
-                              return (
-                                <motion.div
-                                  key={`general-${id}`}
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                  className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                                >
-                                  <button
-                                    onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                    className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                    aria-label="Delete component"
-                                  >
-                                    <IoMdClose size={20} />
-                                  </button>
-                                  <p className="text-red-500 text-sm">Component "{label}" not found</p>
-                                </motion.div>
-                              );
-                            }
-                            if (type === 'equity' && !symbol) {
-                              return (
-                                <motion.div
-                                  key={`general-${id}`}
-                                  initial={{ opacity: 0, y: 20 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                  className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                                >
-                                  <button
-                                    onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                    className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                    aria-label="Delete component"
-                                  >
-                                    <IoMdClose size={20} />
-                                  </button>
-                                  <p className="text-yellow-500 text-sm">Waiting for company selection for {label}</p>
-                                </motion.div>
-                              );
-                            }
-                            return (
-                              <motion.div
-                                key={`general-${id}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                className="relative bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                              >
-                                <button
-                                  onClick={() => handleDeleteComponent(droppedItems.findIndex((item) => item.id === id))}
-                                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
-                                  aria-label="Delete component"
-                                >
-                                  <IoMdClose size={20} />
-                                </button>
-                                <h3 className="text-base font-semibold mb-4 text-gray-800 dark:text-white truncate">
-                                  {label} {companyName ? `(${companyName})` : platform ? `(${platform})` : ''}
-                                </h3>
-                                <div className="min-h-[350px] w-full overflow-hidden"> {/* Increased height from 250px to 350px */}
-                                  {type === 'equity' ? (
-                                    <Component symbol={symbol} key={`${id}-${symbol}`} />
-                                  ) : (
-                                    <GraphDataProvider>
-                                      <Component uploadId={uploadId} key={`${id}-${uploadId}`} />
-                                    </GraphDataProvider>
+                                  <ResizeHandle direction="horizontal" />
+                                </PanelResizeHandle>
+                              )}
+                              <Panel defaultSize={100 / firstThree.length} minSize={20}>
+                                {renderPlot(item, idx, droppedItems)}
+                              </Panel>
+                            </React.Fragment>
+                          ))}
+                        </PanelGroup>
+                      </Panel>
+
+                      {hasRemaining && (
+                        <>
+                          <PanelResizeHandle onDragging={setResizing}>
+                            <ResizeHandle direction="vertical" />
+                          </PanelResizeHandle>
+                          <Panel defaultSize={50} minSize={30}>
+                            <PanelGroup direction="horizontal">
+                              {remaining.map((item, idx) => (
+                                <React.Fragment key={`rem-${item.id}`}>
+                                  {idx > 0 && (
+                                    <PanelResizeHandle onDragging={setResizing}>
+                                      <ResizeHandle direction="horizontal" />
+                                    </PanelResizeHandle>
                                   )}
-                                </div>
-                              </motion.div>
-                            );
-                          })}
-                        </div>
+                                  <Panel defaultSize={100 / remaining.length} minSize={20}>
+                                    {renderPlot(item, idx + 3, droppedItems)}
+                                  </Panel>
+                                </React.Fragment>
+                              ))}
+                            </PanelGroup>
+                          </Panel>
+                        </>
                       )}
-                    </div>
+                    </PanelGroup>
                   );
                 })()}
               </DroppableArea>
             </section>
           </main>
         </div>
-        <SidebarRight collapsed={collapsed} setCollapsed={setCollapsed} onItemClick={handleItemClick} />
-        {showModal && (
-          <AddNewModal onClose={() => setShowModal(false)} onCreateTab={handleNewDashboard} />
+
+        {/* Enhanced Modals */}
+        {showUnsavedModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full shadow-2xl border border-gray-200 dark:border-gray-700"
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Unsaved Changes</h2>
+                <p className="text-gray-600 dark:text-gray-300">
+                  You have unsaved changes. Would you like to save before leaving?
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSaveAndNavigate}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 font-semibold shadow-lg"
+                >
+                  Save & Continue
+                </button>
+                <button
+                  onClick={handleConfirmNavigation}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all duration-300 font-semibold shadow-lg"
+                >
+                  Leave Anyway
+                </button>
+              </div>
+              <button
+                onClick={handleCancelNavigation}
+                className="w-full mt-3 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
         )}
+
+        {showSavedModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full shadow-2xl border border-gray-200 dark:border-gray-700 text-center"
+            >
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BiSolidSave className="w-8 h-8 text-green-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">Dashboard Saved!</h2>
+              <p className="text-gray-600 dark:text-gray-300">Your changes have been saved successfully.</p>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* Keep your existing modals (DragStartModal, PortfolioSelectModal, etc.) */}
+        {/* <DragStartModal
+          isOpen={showDragModal}
+          onClose={() => {
+            setShowDragModal(false);
+            setCurrentDragItem(null);
+            setError(null);
+          }}
+          onSearch={handleStockSearch}
+          searchTerm={searchTerm}
+          setSearchTerm={(value) => {
+            setSearchTerm(value);
+            setError(null);
+            if (value.length >= 2) handleStockSearch();
+            else setSearchedStocks([]);
+          }}
+          searchedStocks={searchedStocks}
+          onSelectItem={(item) => {
+            // ... keep existing logic
+          }}
+          onClear={() => {
+            setSearchTerm('');
+            setSearchedStocks([]);
+            setError(null);
+          }}
+          selectedCompany={null}
+          error={
+          
+          error}
+        /> */}
+
         <DragStartModal
           isOpen={showDragModal}
           onClose={() => {
@@ -7650,6 +9376,7 @@ const DashBoard = () => {
           selectedCompany={null}
           error={error}
         />
+
         <PortfolioSelectModal
           isOpen={showPortfolioModal}
           onClose={() => {
@@ -7740,6 +9467,4 @@ const DashBoard = () => {
   );
 };
 
-export default DashBoard;
-
-
+export default DashBoard

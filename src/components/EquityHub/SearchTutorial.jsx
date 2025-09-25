@@ -687,6 +687,18 @@ const SearchTutorial = () => {
       thumbnail: '/Tutorials/sensex 2.png',
       duration: '0:50',
     },
+
+      {
+      id: 6,
+      title: 'Sensex Impact Calculator',
+      src: '/Tutorials/Sensex Impact calculator-Final.mp4',
+      type: 'video/mp4',
+      thumbnail: '/equityhub_plot/sensex_calculator1.png',
+      duration: '0:59',
+    },
+
+   
+    
   ]);
 
   const filteredPlaylist = playlist.filter((video) =>
@@ -1109,7 +1121,7 @@ const SearchTutorial = () => {
                 />
               </div>
 
-              <ul className="space-y-3 sm:space-y-4 max-h-[60vh] sm:max-h-[70vh] overflow-y-auto no-scrollbar">
+              <ul className="space-y-3 sm:space-y-4 max-h-[70vh] sm:max-h-[70vh] overflow-y-auto no-scrollbar">
                 {filteredPlaylist.length > 0 ? (
                   filteredPlaylist.map((video) => (
                     <li

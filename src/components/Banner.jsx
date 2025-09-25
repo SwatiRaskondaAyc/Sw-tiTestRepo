@@ -4088,7 +4088,7 @@ const Banner = () => {
   }, [industries, maxBracketAvg]);
 
   return (
-    <div className="relative px-3 py-6 sm:py-12 min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900">
+    <div className="relative px-3 py-6 sm:py-12 min-h-[100vh] flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-slate-900">
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 dark:bg-blue-900 rounded-full opacity-20 blur-3xl"></div>

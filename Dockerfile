@@ -48,7 +48,7 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY default.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80 for Nginx
-EXPOSE 5175
+EXPOSE 5178
 
 # RUN Nginx in the foreground
 CMD ["nginx", "-g", "daemon off;"]
