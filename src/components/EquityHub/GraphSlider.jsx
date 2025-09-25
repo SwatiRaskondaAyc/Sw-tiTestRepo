@@ -4625,7 +4625,7 @@ const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize
   const PrevArrow = ({ onClick }) => (
     <button
       onClick={onClick}
-      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-white p-3 rounded-full hover:bg-white dark:hover:bg-slate-700  border border-slate-200 dark:border-slate-600 transition-all duration-300 hover:scale-110 z-20 backdrop-blur-sm"
+      className="absolute left-1 top-1/2 transform -translate-y-1/2 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-white p-3 rounded-full hover:bg-white dark:hover:bg-slate-700  border border-slate-200 dark:border-slate-600 transition-all duration-300 hover:scale-110 z-20 backdrop-blur-sm"
       aria-label="Previous Graph"
     >
       <FaArrowLeft className="w-4 h-4" />
@@ -4635,7 +4635,7 @@ const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize
   const NextArrow = ({ onClick }) => (
     <button
       onClick={onClick}
-      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-white p-3 rounded-full hover:bg-white dark:hover:bg-slate-700  border border-slate-200 dark:border-slate-600 transition-all duration-300 hover:scale-110 z-20 backdrop-blur-sm"
+      className="absolute right-1 top-1/2 transform -translate-y-1/2 bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-white p-3 rounded-full hover:bg-white dark:hover:bg-slate-700  border border-slate-200 dark:border-slate-600 transition-all duration-300 hover:scale-110 z-20 backdrop-blur-sm"
       aria-label="Next Graph"
     >
       <FaArrowRight className="w-4 h-4" />
@@ -4709,7 +4709,7 @@ const GraphSlider = ({ symbol, symbols, isFullWidth, timeRange = '1Y', normalize
           </div>
 
           {/* Graph Slider */}
-          <div className={`${isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[600px]'} relative`}>
+          <div className={`${isFullscreen ? 'h-[calc(100vh-150px)]' : 'h-[700px]'} relative`}>
             <Slider
               {...sliderSettings}
               ref={sliderRef}

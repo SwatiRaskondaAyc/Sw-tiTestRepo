@@ -1854,7 +1854,7 @@ const SectorStrip = () => {
     <div className="relative px-4 py-6 bg-gradient-to-br from-gray-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 min-h-[60vh]">
       <div ref={ref} className="max-w-7xl w-full mx-auto">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 ">
             Sector Performance
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 max-w-2xl">

@@ -693,6 +693,1358 @@
 
 
 
+// import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+// import { motion, useInView, AnimatePresence } from 'framer-motion';
+// import {
+//     Sparkles, TrendingUp, BarChart2, PieChart,
+//     Factory, FlaskConical, DollarSign, Car, Code, HeartPulse,
+//     Scissors, ShoppingBag, Building2, Hammer, ChevronDown, ChevronUp,
+//     ArrowUpRight, Info, RotateCcw, ArrowUp, ArrowDown
+// } from 'lucide-react';
+// import { Typewriter } from 'react-simple-typewriter';
+// import axios from 'axios';
+// import { Bar } from 'react-chartjs-2';
+// import {
+//     Chart as ChartJS,
+//     ArcElement,
+//     Tooltip,
+//     Legend,
+//     CategoryScale,
+//     LinearScale,
+//     BarElement,
+//     Title
+// } from 'chart.js';
+// import { ResponsivePie } from '@nivo/pie';
+
+// ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+
+// const MarketCapBanner = () => {
+//     const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
+//     const ref = useRef(null);
+//     const isInView = useInView(ref, { once: true, margin: '-50px' });
+//     const [sectors, setSectors] = useState([]);
+//     const [selectedSector, setSelectedSector] = useState(null);
+//     const [loading, setLoading] = useState(true);
+//     const [error, setError] = useState(null);
+//     const [highlightedSector, setHighlightedSector] = useState(null);
+//     const [sortOrder, setSortOrder] = useState('desc');
+//     const [maxPELessThan10Sector, setMaxPELessThan10Sector] = useState(null);
+//     const [minPELessThan10Sector, setMinPELessThan10Sector] = useState(null);
+//     const [isDark, setIsDark] = useState(
+//         localStorage.getItem('theme') === 'dark'
+//     );
+//     const [viewMode, setViewMode] = useState('bar');
+
+//     const colorPalette = [
+//         'rgba(54, 162, 235, 0.8)',  // Blue
+//         'rgba(75, 192, 192, 0.8)',  // Teal
+//         'rgba(255, 159, 64, 0.8)',  // Orange
+//         'rgba(153, 102, 255, 0.8)', // Purple
+//         'rgba(255, 205, 86, 0.8)',  // Yellow
+//         'rgba(255, 99, 132, 0.8)',  // Red
+//         'rgba(100, 181, 246, 0.8)', // Light Blue
+//         'rgba(77, 182, 172, 0.8)',  // Green
+//         'rgba(186, 104, 200, 0.8)', // Light Purple
+//         'rgba(246, 178, 107, 0.8)', // Light Orange
+//     ];
+
+//     const highlightColorPalette = colorPalette.map(color =>
+//         color.replace('0.8', '1').replace(/,\s*\d+\.\d+\)/, ', 1)')
+//     );
+
+//     const sectorIcons = {
+//         'Capital Goods': Factory,
+//         'Chemicals': FlaskConical,
+//         'Finance': DollarSign,
+//         'Automobile & Ancillaries': Car,
+//         'IT': Code,
+//         'Healthcare': HeartPulse,
+//         'Textile': Scissors,
+//         'FMCG': ShoppingBag,
+//         'Infrastructure': Building2,
+//         'Iron & Steel': Hammer
+//     };
+
+//     const formatDecimal = (num) => {
+//         if (num == null || isNaN(num) || typeof num !== 'number') return 'N/A';
+//         return Math.round(num * 100) / 100;
+//     };
+
+//     // useEffect(() => {
+//     //   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+//     //   setIsDark(mediaQuery.matches);
+//     //   const handleChange = (e) => setIsDark(e.matches);
+//     //   mediaQuery.addEventListener('change', handleChange);
+//     //   return () => mediaQuery.removeEventListener('change', handleChange);
+//     // }, []);
+
+
+//     useEffect(() => {
+//         const handleThemeChange = () => {
+//             const currentTheme = localStorage.getItem('theme');
+//             setIsDark(currentTheme === 'dark');
+//         };
+
+//         // Run once on mount
+//         handleThemeChange();
+
+//         // Listen for storage changes (cross-tab + Navbar updates)
+//         window.addEventListener('storage', handleThemeChange);
+
+//         return () => {
+//             window.removeEventListener('storage', handleThemeChange);
+//         };
+//     }, []);
+//     useEffect(() => {
+//         const controller = new AbortController();
+//         const cacheDuration = 60 * 60 * 1000;
+//         const fetchSectors = async () => {
+//             try {
+//                 setLoading(true);
+//                 setError(null);
+//                 setSectors([]);
+
+//                 const cachedData = localStorage.getItem('sectorData');
+//                 const cacheTimestamp = localStorage.getItem('sectorDataTimestamp');
+//                 let validSectors = [];
+
+//                 if (cachedData && cacheTimestamp && Date.now() - parseInt(cacheTimestamp) < cacheDuration) {
+//                     const parsedData = JSON.parse(cachedData);
+//                     validSectors = parsedData.data
+//                         .filter((sector) => sector?.Sector && Number.isFinite(sector.SectorMarketCap) && Number.isFinite(sector.SectorCAGR_1Y_MCap) && Array.isArray(sector.Companies?.Symbol))
+//                         .map((sector, index) => {
+//                             const peLessThan10Count = sector.Companies.Symbol.filter((_, i) => {
+//                                 const pe = sector.Companies.PE?.[i];
+//                                 return pe != null && !isNaN(pe) && pe < 10;
+//                             }).length;
+//                             return {
+//                                 ...sector,
+//                                 color: colorPalette[index % colorPalette.length],
+//                                 highlightColor: highlightColorPalette[index % highlightColorPalette.length],
+//                                 PELessThan10Count: peLessThan10Count,
+//                                 TotalCompanies: sector.Companies.Symbol.length
+//                             };
+//                         });
+//                 } else {
+//                     // const response = await axios.get(`${API_BASE}/equity_sectoral_analysis`, { signal: controller.signal });
+//                     const response = await axios.get(`${API_BASE}/landpage/sector-summary`, { signal: controller.signal });
+//                     if (response.data.status !== 'success' || !Array.isArray(response.data.data)) {
+//                         throw new Error(response.data.message || 'API response is not valid');
+//                     }
+//                     validSectors = response.data.data
+//                         .filter((sector) => sector?.Sector && Number.isFinite(sector.SectorMarketCap) && Number.isFinite(sector.SectorCAGR_1Y_MCap) && Array.isArray(sector.Companies?.Symbol))
+//                         .map((sector, index) => {
+//                             const peLessThan10Count = sector.Companies.Symbol.filter((_, i) => {
+//                                 const pe = sector.Companies.PE?.[i];
+//                                 return pe != null && !isNaN(pe) && pe < 10;
+//                             }).length;
+//                             return {
+//                                 ...sector,
+//                                 color: colorPalette[index % colorPalette.length],
+//                                 highlightColor: highlightColorPalette[index % highlightColorPalette.length],
+//                                 PELessThan10Count: peLessThan10Count,
+//                                 TotalCompanies: sector.Companies.Symbol.length
+//                             };
+//                         });
+//                     localStorage.setItem('sectorData', JSON.stringify(response.data));
+//                     localStorage.setItem('sectorDataTimestamp', Date.now().toString());
+//                 }
+
+//                 if (validSectors.length === 0) {
+//                     setSectors([]);
+//                     setSelectedSector(null);
+//                     setMaxPELessThan10Sector(null);
+//                     setMinPELessThan10Sector(null);
+//                     setLoading(false);
+//                     return;
+//                 }
+
+//                 const sortedSectors = [...validSectors].sort((a, b) => {
+//                     return sortOrder === 'desc' ? b.SectorMarketCap - a.SectorMarketCap : a.SectorMarketCap - b.SectorMarketCap;
+//                 }).slice(0, 10);
+
+//                 setSectors(sortedSectors);
+
+//                 const maxPELessThan10Sector = validSectors.reduce((max, sector) => {
+//                     if (!max) return sector;
+//                     if (sector.PELessThan10Count === max.PELessThan10Count) {
+//                         return sector.TotalCompanies < max.TotalCompanies ? sector : max;
+//                     }
+//                     return sector.PELessThan10Count > max.PELessThan10Count ? sector : max;
+//                 }, validSectors[0]);
+
+//                 const minPELessThan10Sector = validSectors.reduce((min, sector) => {
+//                     if (!min) return sector;
+//                     if (sector.PELessThan10Count === min.PELessThan10Count) {
+//                         return sector.TotalCompanies < min.TotalCompanies ? sector : min;
+//                     }
+//                     return sector.PELessThan10Count < min.PELessThan10Count ? sector : min;
+//                 }, validSectors[0]);
+
+//                 setMaxPELessThan10Sector(maxPELessThan10Sector);
+//                 setMinPELessThan10Sector(minPELessThan10Sector);
+
+//                 if (sortedSectors.length > 0) {
+//                     setSelectedSector(sortedSectors[0]);
+//                 } else {
+//                     setSelectedSector(null);
+//                 }
+//                 setLoading(false);
+//             } catch (error) {
+//                 if (error.name === 'AbortError') return;
+//                 setError(error.message || 'Failed to fetch sector data');
+//                 console.error('Error fetching sector data:', error, error.response?.data);
+//                 setSectors([]);
+//                 setSelectedSector(null);
+//                 setMaxPELessThan10Sector(null);
+//                 setMinPELessThan10Sector(null);
+//                 setLoading(false);
+//             }
+//         };
+
+//         const debounceFetch = setTimeout(() => fetchSectors(), 100);
+//         return () => {
+//             controller.abort();
+//             clearTimeout(debounceFetch);
+//         };
+//     }, [API_BASE, sortOrder]);
+
+//     const formatNumber = useCallback((num) => {
+//         if (num == null || isNaN(num) || typeof num !== 'number') return '₹0';
+//         const absNum = Math.abs(num);
+//         const sign = num < 0 ? '-' : '';
+//         if (absNum >= 1e7) {
+//             const value = absNum / 1e7;
+//             return `${sign}₹${value.toLocaleString('en-IN', { minimumFractionDigits: value % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })} Cr`;
+//         }
+//         if (absNum >= 1e5) {
+//             const value = absNum / 1e5;
+//             return `${sign}₹${value.toLocaleString('en-IN', { minimumFractionDigits: value % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })} L`;
+//         }
+//         return `${sign}₹${Math.round(absNum).toLocaleString('en-IN')}`;
+//     }, []);
+
+//     const totalMarketCap = useMemo(() => {
+//         return sectors.reduce((sum, sector) => sum + (sector.SectorMarketCap || 0), 0);
+//     }, [sectors]);
+
+//     const pieChartData = useMemo(() => {
+//         if (!Array.isArray(sectors) || sectors.length === 0) {
+//             return [
+//                 { id: 'No Data', value: 1, color: isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(200, 200, 200, 0.5)' },
+//             ];
+//         }
+//         return sectors.map((sector, index) => ({
+//             id: sector.Sector || 'Unknown',
+//             value: sector.SectorMarketCap || 0,
+//             color: highlightedSector === index ? sector.highlightColor : sector.color,
+//         }));
+//     }, [sectors, highlightedSector, isDark]);
+
+//     const barChartData = useMemo(() => {
+//         if (!Array.isArray(sectors) || sectors.length === 0) {
+//             return {
+//                 labels: ['No Data'],
+//                 datasets: [{
+//                     label: 'Market Cap',
+//                     data: [1],
+//                     backgroundColor: isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(200, 200, 200, 0.5)',
+//                     borderWidth: 0,
+//                     borderRadius: 4,
+//                 }],
+//             };
+//         }
+
+//         const sortedSectors = [...sectors].sort((a, b) => b.SectorMarketCap - a.SectorMarketCap);
+
+//         return {
+//             labels: sortedSectors.map(sector => sector.Sector || 'Unknown'),
+//             datasets: [{
+//                 label: 'Market Cap',
+//                 data: sortedSectors.map(sector => sector.SectorMarketCap || 0),
+//                 backgroundColor: sortedSectors.map((sector, index) => highlightedSector === index ? sector.highlightColor : sector.color),
+//                 borderWidth: 0,
+//                 borderRadius: 4,
+//                 barPercentage: 0.6,
+//             }],
+//         };
+//     }, [sectors, highlightedSector, isDark]);
+
+//     const loaderPieChartData = useMemo(() => [
+//         { id: 'Loading...', value: 1, color: isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(200, 200, 200, 0.5)' },
+//         { id: 'Loading...', value: 1, color: isDark ? 'rgba(60, 60, 60, 0.5)' : 'rgba(180, 180, 180, 0.5)' },
+//         { id: 'Loading...', value: 1, color: isDark ? 'rgba(70, 70, 70, 0.5)' : 'rgba(160, 160, 160, 0.5)' },
+//     ], [isDark]);
+
+//     const loaderBarChartData = useMemo(() => ({
+//         labels: ['Loading...', 'Loading...', 'Loading...'],
+//         datasets: [{
+//             label: 'Market Cap',
+//             data: [1, 1, 1],
+//             backgroundColor: isDark
+//                 ? ['rgba(50, 50, 50, 0.5)', 'rgba(60, 60, 60, 0.5)', 'rgba(70, 70, 70, 0.5)']
+//                 : ['rgba(200, 200, 200, 0.5)', 'rgba(180, 180, 180, 0.5)', 'rgba(160, 160, 160, 0.5)'],
+//             borderWidth: 0,
+//             borderRadius: 4,
+//             barPercentage: 0.6,
+//         }],
+//     }), [isDark]);
+
+//     const barChartOptions = useMemo(() => ({
+//         responsive: true,
+//         maintainAspectRatio: false,
+//         indexAxis: 'y',
+//         plugins: {
+//             legend: {
+//                 display: false,
+//             },
+//             tooltip: {
+//                 enabled: Array.isArray(sectors) && sectors.length > 0,
+//                 backgroundColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+//                 titleColor: isDark ? '#ffffff' : '#000000',
+//                 bodyColor: isDark ? '#dddddd' : '#333333',
+//                 callbacks: {
+//                     label: function (context) {
+//                         const label = context.dataset.label || '';
+//                         const value = context.raw || 0;
+//                         const percentage = totalMarketCap > 0 ? ((value / totalMarketCap) * 100).toFixed(1) : 0;
+//                         return `${label}: ${formatNumber(value)} (${percentage}%)`;
+//                     },
+//                 },
+//             },
+//         },
+//         scales: {
+//             x: {
+//                 grid: {
+//                     color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+//                 },
+//                 ticks: {
+//                     color: isDark ? '#e5e5e5' : '#333',
+//                     callback: function (value) {
+//                         if (value >= 1e7) {
+//                             return '₹' + (value / 1e7).toFixed(1) + ' Cr';
+//                         }
+//                         if (value >= 1e5) {
+//                             return '₹' + (value / 1e5).toFixed(1) + ' L';
+//                         }
+//                         return '₹' + value;
+//                     },
+//                 },
+//             },
+//             y: {
+//                 grid: {
+//                     color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+//                 },
+//                 ticks: {
+//                     color: isDark ? '#e5e5e5' : '#333',
+//                 },
+//             },
+//         },
+//         animation: {
+//             duration: 1000,
+//             easing: 'easeOutQuart',
+//         },
+//         onClick: (event, elements) => {
+//             if (!loading && elements?.length > 0 && Array.isArray(sectors) && sectors.length > 0) {
+//                 const clickedIndex = elements[0].index;
+//                 if (clickedIndex < sectors.length) {
+//                     setSelectedSector(sectors[clickedIndex]);
+//                     setHighlightedSector(clickedIndex);
+//                 }
+//             }
+//         },
+//     }), [formatNumber, isDark, loading, sectors, totalMarketCap]);
+
+//     const toggleSortOrder = () => {
+//         setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+//     };
+
+//     const toggleViewMode = () => {
+//         setViewMode(prev => prev === 'bar' ? 'pie' : 'bar');
+//     };
+
+//     return (
+//         <div className="relative px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-[70vh] sm:min-h-[75vh] md:min-h-[80vh]">
+//             <div ref={ref} className="max-w-7xl w-full mx-auto flex flex-col lg:flex-row items-start justify-between gap-6 sm:gap-8 z-10">
+//                 {/* Left Section: Title and Selected Sector Card */}
+//                 <div className="w-full lg:w-1/2 text-gray-800 dark:text-gray-100 text-center lg:text-left">
+//                     <motion.div
+//                         initial={{ opacity: 0, y: 20 }}
+//                         animate={isInView ? { opacity: 1, y: 0 } : {}}
+//                         transition={{ duration: 0.5 }}
+//                     >
+//                         <div className="flex items-center justify-center lg:justify-start text-slate-700 dark:text-indigo-300 text-sm sm:text-base font-medium">
+//                             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+//                             <span>Sector Intelligence Platform</span>
+//                         </div>
+//                         <h1 className="mt-2 sm:mt-4 text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-center lg:text-left">
+//                             Capital Market{" "}
+//                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-300">
+//                                 Data Analytics
+//                             </span>
+//                             <span className="z-10 align-right inline-block -rotate-6 bg-white text-sky-600 dark:bg-slate-800 font-semibold text-xs sm:text-sm px-2 py-1 rounded-md border border-sky-300 dark:border-sky-600 shadow-sm">
+//                                 BETA
+//                             </span>
+//                         </h1>
+
+//                         <p className="mt-4 sm:mt-5 text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-md mx-auto lg:mx-0 text-center lg:text-left min-h-[80px] sm:min-h-[100px]">
+//                             <Typewriter
+//                                 words={[
+//                                     'Warren Buffett - "Best Chance to deploy capital are when things are down"',
+//                                     'Vijay Kedia  - "Only two people can BUY at BOTTOM and SELL at TOP one is GOD and other is a LIAR."',
+//                                     'Ray Dalio - "If you are not aggressive you will not make money; if you are not defensive you will not keep money."',
+//                                     'Rakesh Jhunjhunwala - "Trading is for creating capital and investment is for growth of capital."',
+//                                     'Ray Dalio - " There are two main drivers of asset class returns - inflation and growth."',
+//                                 ]}
+//                                 loop={0}
+//                                 cursor
+//                                 cursorStyle="|"
+//                                 typeSpeed={60}
+//                                 deleteSpeed={30}
+//                                 delaySpeed={1500}
+//                             />
+//                         </p>
+
+//                         <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+//                             <button
+//                                 onClick={toggleSortOrder}
+//                                 disabled={loading}
+//                                 className="flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 bg-sky-600 text-white rounded-lg text-sm sm:text-base font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-sky-700"
+//                                 aria-label={`Sort by Market Cap: ${sortOrder === 'desc' ? 'High to Low' : 'Low to High'}`}
+//                             >
+//                                 {sortOrder === 'desc' ? <ArrowDown size={16} /> : <ArrowUp size={16} />}
+//                                 Sort: {sortOrder === 'desc' ? 'High to Low' : 'Low to High'}
+//                             </button>
+
+//                             <button
+//                                 onClick={toggleViewMode}
+//                                 disabled={loading}
+//                                 className="flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 bg-indigo-600 text-white rounded-lg text-sm sm:text-base font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700"
+//                                 aria-label={`Switch to ${viewMode === 'bar' ? 'Pie' : 'Bar'} Chart view`}
+//                             >
+//                                 {viewMode === 'bar' ? <BarChart2 size={16} /> : <PieChart size={16} />}
+//                                 Switch to {viewMode === 'bar' ? 'Pie Chart' : 'Bar Chart'}
+//                             </button>
+//                         </div>
+//                     </motion.div>
+
+//                     <AnimatePresence mode="wait">
+//                         {loading ? (
+//                             <motion.div
+//                                 key="loading"
+//                                 className=" sm:mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden w-full max-w-sm sm:max-w-md mx-auto p-4 sm:p-5"
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 exit={{ opacity: 0, y: -20 }}
+//                                 transition={{ duration: 0.3 }}
+//                             >
+//                                 <div className="animate-pulse flex flex-col items-center space-y-3 sm:space-y-4">
+//                                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+//                                     <div className="w-3/4 h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded"></div>
+//                                     <div className="w-1/2 h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+//                                     <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full">
+//                                         {[...Array(4)].map((_, i) => (
+//                                             <div key={i} className="bg-gray-100 dark:bg-gray-700 p-2 sm:p-3 rounded-lg flex flex-col space-y-1">
+//                                                 <div className="w-1/2 h-2 sm:h-3 bg-gray-200 dark:bg-gray-600 rounded"></div>
+//                                                 <div className="w-3/4 h-3 sm:h-4 bg-gray-200 dark:bg-gray-600 rounded"></div>
+//                                             </div>
+//                                         ))}
+//                                     </div>
+//                                 </div>
+//                             </motion.div>
+//                         ) : !selectedSector || sectors.length === 0 ? (
+//                             <motion.div
+//                                 key="no-data"
+//                                 className="mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden w-full max-w-sm sm:max-w-md mx-auto p-4 sm:p-5 text-center"
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 exit={{ opacity: 0, y: -20 }}
+//                                 transition={{ duration: 0.3 }}
+//                             >
+//                                 <p className="text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">
+//                                     No sector data available
+//                                 </p>
+//                                 <button
+//                                     onClick={() => window.location.reload()}
+//                                     className="mt-3 px-4 sm:px-5 py-2 sm:py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-md text-sm sm:text-base transition-colors duration-200"
+//                                 >
+//                                     Retry
+//                                 </button>
+//                             </motion.div>
+//                         ) : (
+//                             <motion.div
+//                                 key="data"
+//                                 className="mt-3 sm:mt-8 flex flex-col gap-5 w-full max-w-sm sm:max-w-md mx-auto lg:mx-0"
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 exit={{ opacity: 0, y: -20 }}
+//                                 transition={{ duration: 0.3 }}
+//                             >
+//                                 <motion.div
+//                                     className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden w-full p-4 sm:p-5"
+//                                     initial={{ opacity: 0 }}
+//                                     animate={{ opacity: 1 }}
+//                                     transition={{ delay: 0.1, duration: 0.3 }}
+//                                 >
+//                                     <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-5">
+//                                         <motion.div
+//                                             className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg flex items-center justify-center shadow-md"
+//                                             style={{
+//                                                 backgroundColor: selectedSector.highlightColor || selectedSector.color || '#3b82f6',
+//                                                 color: 'white',
+//                                             }}
+//                                             whileHover={{ scale: 1.1 }}
+//                                             whileTap={{ scale: 0.95 }}
+//                                             transition={{ type: "spring", stiffness: 300, damping: 10 }}
+//                                         >
+//                                             {sectorIcons[selectedSector.Sector] ? (
+//                                                 React.createElement(sectorIcons[selectedSector.Sector], {
+//                                                     className: "w-5 sm:w-6 h-5 sm:h-6",
+//                                                     strokeWidth: 1.5,
+//                                                 })
+//                                             ) : (
+//                                                 <PieChart className="w-5 sm:w-6 h-5 sm:h-6" strokeWidth={1.5} />
+//                                             )}
+//                                         </motion.div>
+//                                         <div>
+//                                             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
+//                                                 {selectedSector.Sector}
+//                                             </h3>
+//                                             <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+//                                                 {selectedSector.description || 'Sector performance overview'}
+//                                             </p>
+//                                         </div>
+//                                     </div>
+//                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+//                                         <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-800 p-3 rounded-lg border border-blue-100 dark:border-gray-600">
+//                                             <div className="flex items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-400 text-sm sm:text-base font-medium mb-2">
+//                                                 <PieChart className="w-4 sm:w-5 h-4 sm:h-5 opacity-70" />
+//                                                 Market Cap
+//                                             </div>
+//                                             <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100">
+//                                                 {formatNumber(selectedSector.SectorMarketCap)}
+//                                             </p>
+//                                         </div>
+//                                         <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-800 p-3 rounded-lg border border-green-100 dark:border-gray-600">
+//                                             <div className="flex items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-400 text-sm sm:text-base font-medium mb-2">
+//                                                 <TrendingUp className="w-4 sm:w-5 h-4 sm:h-5 opacity-70" />
+//                                                 1Y Growth
+//                                             </div>
+//                                             <p
+//                                                 className={`text-base sm:text-lg font-medium ${selectedSector.SectorCAGR_1Y_MCap >= 0
+//                                                     ? 'text-green-600 dark:text-green-400'
+//                                                     : 'text-red-600 dark:text-red-400'
+//                                                     }`}
+//                                             >
+//                                                 {selectedSector.SectorCAGR_1Y_MCap
+//                                                     ? `${formatDecimal(selectedSector.SectorCAGR_1Y_MCap * 100)}%`
+//                                                     : 'N/A'}
+//                                             </p>
+//                                         </div>
+//                                         <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-700 dark:to-gray-800 p-3 rounded-lg border border-purple-100 dark:border-gray-600">
+//                                             <div className="flex items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-400 text-sm sm:text-base font-medium mb-2">
+//                                                 <BarChart2 className="w-4 sm:w-5 h-4 sm:h-5 opacity-70" />
+//                                                 PE Ratio
+//                                             </div>
+//                                             <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100">
+//                                                 {formatDecimal(selectedSector.SectorPE_Mode || 'N/A')}
+//                                             </p>
+//                                         </div>
+//                                     </div>
+//                                 </motion.div>
+//                             </motion.div>
+//                         )}
+//                     </AnimatePresence>
+//                 </div>
+
+//                 {/* Right Section: Chart */}
+//                 <div className="w-full lg:w-1/2 mt-6 sm:mt-8 lg:mt-0 relative">
+//                     {error ? (
+//                         <div className="text-center px-4 py-3 sm:py-4 text-gray-500 dark:bg-gray-800 dark:text-gray-300 text-sm sm:text-base">
+//                             Could not load sector visualization: {error}
+//                         </div>
+//                     ) : (
+//                         <div className="mt-20 w-full h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[70vh] max-h-[800px] min-h-[300px] relative">
+//                             {viewMode === 'bar' ? (
+//                                 <ResponsivePie
+//                                     data={loading ? loaderPieChartData : pieChartData}
+//                                     key={isDark ? 'dark' : 'light'} // ✅ re-render on theme switch
+//                                     margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
+//                                     innerRadius={0.5}
+//                                     padAngle={0.7}
+//                                     cornerRadius={3}
+//                                     colors={{ datum: 'data.color' }}
+//                                     borderWidth={1}
+//                                     // borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
+//                                     enableRadialLabels={false}
+//                                     // radialLabelsSkipAngle={10}
+//                                     sliceLabel={(datum) => datum.id}
+//                                     radialLabelsTextColor={isDark ? '#2d7723ff' : '#333333'}
+//                                     radialLabelsLinkColor={{ from: 'color' }}
+//                                     // enableSliceLabels={true}
+//                                     sliceLabelsSkipAngle={10}
+//                                     sliceLabelsTextColor={isDark ? '#0b6831ff' : '#333333'}
+//                                     //sliceLabel={(datum) => `${((datum.value / totalMarketCap) * 100).toFixed(1)}%`}
+//                                     animate={true}
+//                                     motionStiffness={90}
+//                                     motionDamping={15}
+//                                     tooltip={({ datum }) => (
+//                                         <div
+//                                             style={{
+//                                                 background: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+//                                                 padding: '5px 10px',
+//                                                 borderRadius: '4px',
+//                                                 color: isDark ? '#a7a7a770' : '#000000',
+//                                             }}
+//                                         >
+//                                             <strong>{datum.id}</strong>: {formatNumber(datum.value)} (
+//                                             {totalMarketCap > 0 ? ((datum.value / totalMarketCap) * 100).toFixed(1) : 0}%)
+//                                         </div>
+//                                     )}
+//                                     theme={{
+//                                         textColor: isDark ? '#e5e5e5' : '#3d3a3aff',
+//                                         fontSize: 12,
+//                                         tooltip: {
+//                                             container: {
+//                                                 background: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+//                                                 color: isDark ? '#ffffff' : '#000000',
+//                                                 fontSize: 12,
+//                                             },
+//                                         },
+//                                         legends: {
+//                                             text: {
+//                                                 fill: isDark ? '#2f62a5ff' : '#333333',
+//                                             },
+//                                         },
+//                                     }}
+//                                     onClick={(datum, event) => {
+//                                         if (!loading && sectors.length > 0) {
+//                                             const clickedIndex = sectors.findIndex(s => s.Sector === datum.id);
+//                                             if (clickedIndex >= 0) {
+//                                                 setSelectedSector(sectors[clickedIndex]);
+//                                                 setHighlightedSector(clickedIndex);
+//                                             }
+//                                         }
+//                                     }}
+//                                 />
+
+//                             ) : (
+//                                 <Bar
+//                                     data={loading ? loaderBarChartData : barChartData}
+//                                     options={barChartOptions}
+//                                 />
+//                             )}
+//                         </div>
+//                     )}
+//                     <div className="text-center mt-3 sm:mt-4 text-sm sm:text-base text-gray-600 dark:text-gray-300">
+//                         <p className="text-sky-600 dark:text-sky-300 font-medium">
+//                             Showing top 10 sectors by Market Cap ({sortOrder === 'desc' ? 'highest to lowest' : 'lowest to highest'})
+//                         </p>
+//                         <p className="text-gray-500 dark:text-gray-400 mt-1">
+//                             Total Market Cap: {formatNumber(totalMarketCap)}
+//                         </p>
+//                     </div>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default MarketCapBanner;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+// import { motion, useInView, AnimatePresence } from 'framer-motion';
+// import {
+//     Sparkles, TrendingUp, BarChart2, PieChart,
+//     Factory, FlaskConical, DollarSign, Car, Code, HeartPulse,
+//     Scissors, ShoppingBag, Building2, Hammer, ChevronDown, ChevronUp,
+//     ArrowUpRight, Info, RotateCcw, ArrowUp, ArrowDown
+// } from 'lucide-react';
+// import { Typewriter } from 'react-simple-typewriter';
+// import axios from 'axios';
+// import { ResponsivePie } from '@nivo/pie';
+// import { ResponsiveBar } from '@nivo/bar';
+
+// const MarketCapBanner = () => {
+//     const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
+//     const ref = useRef(null);
+//     const isInView = useInView(ref, { once: true, margin: '-50px' });
+//     const [sectors, setSectors] = useState([]);
+//     const [selectedSector, setSelectedSector] = useState(null);
+//     const [loading, setLoading] = useState(true);
+//     const [error, setError] = useState(null);
+//     const [highlightedSector, setHighlightedSector] = useState(null);
+//     const [sortOrder, setSortOrder] = useState('desc');
+//     const [maxPELessThan10Sector, setMaxPELessThan10Sector] = useState(null);
+//     const [minPELessThan10Sector, setMinPELessThan10Sector] = useState(null);
+//     const [isDark, setIsDark] = useState(
+//         localStorage.getItem('theme') === 'dark'
+//     );
+//     const [viewMode, setViewMode] = useState('bar');
+
+//     const colorPalette = [
+//         'rgba(54, 162, 235, 0.8)',  // Blue
+//         'rgba(75, 192, 192, 0.8)',  // Teal
+//         'rgba(255, 159, 64, 0.8)',  // Orange
+//         'rgba(153, 102, 255, 0.8)', // Purple
+//         'rgba(255, 205, 86, 0.8)',  // Yellow
+//         'rgba(255, 99, 132, 0.8)',  // Red
+//         'rgba(100, 181, 246, 0.8)', // Light Blue
+//         'rgba(77, 182, 172, 0.8)',  // Green
+//         'rgba(186, 104, 200, 0.8)', // Light Purple
+//         'rgba(246, 178, 107, 0.8)', // Light Orange
+//     ];
+
+//     const highlightColorPalette = colorPalette.map(color =>
+//         color.replace('0.8', '1').replace(/,\s*\d+\.\d+\)/, ', 1)')
+//     );
+
+//     const sectorIcons = {
+//         'Capital Goods': Factory,
+//         'Chemicals': FlaskConical,
+//         'Finance': DollarSign,
+//         'Automobile & Ancillaries': Car,
+//         'IT': Code,
+//         'Healthcare': HeartPulse,
+//         'Textile': Scissors,
+//         'FMCG': ShoppingBag,
+//         'Infrastructure': Building2,
+//         'Iron & Steel': Hammer
+//     };
+
+//     const formatDecimal = (num) => {
+//         if (num == null || isNaN(num) || typeof num !== 'number') return 'N/A';
+//         return Math.round(num * 100) / 100;
+//     };
+
+//     useEffect(() => {
+//         const handleThemeChange = () => {
+//             const currentTheme = localStorage.getItem('theme');
+//             setIsDark(currentTheme === 'dark');
+//         };
+
+//         // Run once on mount
+//         handleThemeChange();
+
+//         // Listen for storage changes (cross-tab + Navbar updates)
+//         window.addEventListener('storage', handleThemeChange);
+
+//         return () => {
+//             window.removeEventListener('storage', handleThemeChange);
+//         };
+//     }, []);
+//     useEffect(() => {
+//         const controller = new AbortController();
+//         const cacheDuration = 60 * 60 * 1000;
+//         const fetchSectors = async () => {
+//             try {
+//                 setLoading(true);
+//                 setError(null);
+//                 setSectors([]);
+
+//                 const cachedData = localStorage.getItem('sectorData');
+//                 const cacheTimestamp = localStorage.getItem('sectorDataTimestamp');
+//                 let validSectors = [];
+
+//                 if (cachedData && cacheTimestamp && Date.now() - parseInt(cacheTimestamp) < cacheDuration) {
+//                     const parsedData = JSON.parse(cachedData);
+//                     validSectors = parsedData.data
+//                         .filter((sector) => sector?.Sector && Number.isFinite(sector.SectorMarketCap) && Number.isFinite(sector.SectorCAGR_1Y_MCap) && Array.isArray(sector.Companies?.Symbol))
+//                         .map((sector, index) => {
+//                             const peLessThan10Count = sector.Companies.Symbol.filter((_, i) => {
+//                                 const pe = sector.Companies.PE?.[i];
+//                                 return pe != null && !isNaN(pe) && pe < 10;
+//                             }).length;
+//                             return {
+//                                 ...sector,
+//                                 color: colorPalette[index % colorPalette.length],
+//                                 highlightColor: highlightColorPalette[index % highlightColorPalette.length],
+//                                 PELessThan10Count: peLessThan10Count,
+//                                 TotalCompanies: sector.Companies.Symbol.length
+//                             };
+//                         });
+//                 } else {
+//                     // const response = await axios.get(`${API_BASE}/equity_sectoral_analysis`, { signal: controller.signal });
+//                     const response = await axios.get(`${API_BASE}/landpage/sector-summary`, { signal: controller.signal });
+//                     if (response.data.status !== 'success' || !Array.isArray(response.data.data)) {
+//                         throw new Error(response.data.message || 'API response is not valid');
+//                     }
+//                     validSectors = response.data.data
+//                         .filter((sector) => sector?.Sector && Number.isFinite(sector.SectorMarketCap) && Number.isFinite(sector.SectorCAGR_1Y_MCap) && Array.isArray(sector.Companies?.Symbol))
+//                         .map((sector, index) => {
+//                             const peLessThan10Count = sector.Companies.Symbol.filter((_, i) => {
+//                                 const pe = sector.Companies.PE?.[i];
+//                                 return pe != null && !isNaN(pe) && pe < 10;
+//                             }).length;
+//                             return {
+//                                 ...sector,
+//                                 color: colorPalette[index % colorPalette.length],
+//                                 highlightColor: highlightColorPalette[index % highlightColorPalette.length],
+//                                 PELessThan10Count: peLessThan10Count,
+//                                 TotalCompanies: sector.Companies.Symbol.length
+//                             };
+//                         });
+//                     localStorage.setItem('sectorData', JSON.stringify(response.data));
+//                     localStorage.setItem('sectorDataTimestamp', Date.now().toString());
+//                 }
+
+//                 if (validSectors.length === 0) {
+//                     setSectors([]);
+//                     setSelectedSector(null);
+//                     setMaxPELessThan10Sector(null);
+//                     setMinPELessThan10Sector(null);
+//                     setLoading(false);
+//                     return;
+//                 }
+
+//                 const sortedSectors = [...validSectors].sort((a, b) => {
+//                     return sortOrder === 'desc' ? b.SectorMarketCap - a.SectorMarketCap : a.SectorMarketCap - b.SectorMarketCap;
+//                 }).slice(0, 10);
+
+//                 setSectors(sortedSectors);
+
+//                 const maxPELessThan10Sector = validSectors.reduce((max, sector) => {
+//                     if (!max) return sector;
+//                     if (sector.PELessThan10Count === max.PELessThan10Count) {
+//                         return sector.TotalCompanies < max.TotalCompanies ? sector : max;
+//                     }
+//                     return sector.PELessThan10Count > max.PELessThan10Count ? sector : max;
+//                 }, validSectors[0]);
+
+//                 const minPELessThan10Sector = validSectors.reduce((min, sector) => {
+//                     if (!min) return sector;
+//                     if (sector.PELessThan10Count === min.PELessThan10Count) {
+//                         return sector.TotalCompanies < min.TotalCompanies ? sector : min;
+//                     }
+//                     return sector.PELessThan10Count < min.PELessThan10Count ? sector : min;
+//                 }, validSectors[0]);
+
+//                 setMaxPELessThan10Sector(maxPELessThan10Sector);
+//                 setMinPELessThan10Sector(minPELessThan10Sector);
+
+//                 if (sortedSectors.length > 0) {
+//                     setSelectedSector(sortedSectors[0]);
+//                 } else {
+//                     setSelectedSector(null);
+//                 }
+//                 setLoading(false);
+//             } catch (error) {
+//                 if (error.name === 'AbortError') return;
+//                 setError(error.message || 'Failed to fetch sector data');
+//                 console.error('Error fetching sector data:', error, error.response?.data);
+//                 setSectors([]);
+//                 setSelectedSector(null);
+//                 setMaxPELessThan10Sector(null);
+//                 setMinPELessThan10Sector(null);
+//                 setLoading(false);
+//             }
+//         };
+
+//         const debounceFetch = setTimeout(() => fetchSectors(), 100);
+//         return () => {
+//             controller.abort();
+//             clearTimeout(debounceFetch);
+//         };
+//     }, [API_BASE, sortOrder]);
+
+//     const formatNumber = useCallback((num) => {
+//         if (num == null || isNaN(num) || typeof num !== 'number') return '₹0';
+//         const absNum = Math.abs(num);
+//         const sign = num < 0 ? '-' : '';
+//         if (absNum >= 1e7) {
+//             const value = absNum / 1e7;
+//             return `${sign}₹${value.toLocaleString('en-IN', { minimumFractionDigits: value % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })} Cr`;
+//         }
+//         if (absNum >= 1e5) {
+//             const value = absNum / 1e5;
+//             return `${sign}₹${value.toLocaleString('en-IN', { minimumFractionDigits: value % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })} L`;
+//         }
+//         return `${sign}₹${Math.round(absNum).toLocaleString('en-IN')}`;
+//     }, []);
+
+//     const totalMarketCap = useMemo(() => {
+//         return sectors.reduce((sum, sector) => sum + (sector.SectorMarketCap || 0), 0);
+//     }, [sectors]);
+
+//     const chartData = useMemo(() => {
+//         if (!Array.isArray(sectors) || sectors.length === 0) {
+//             return [
+//                 { id: 'No Data', value: 1, color: isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(200, 200, 200, 0.5)' },
+//             ];
+//         }
+//         return sectors.map((sector, index) => ({
+//             id: sector.Sector || 'Unknown',
+//             value: sector.SectorMarketCap || 0,
+//             color: highlightedSector === index ? sector.highlightColor : sector.color,
+//         }));
+//     }, [sectors, highlightedSector, isDark]);
+
+//     const loaderChartData = useMemo(() => [
+//         { id: 'Loading...', value: 1, color: isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(200, 200, 200, 0.5)' },
+//         { id: 'Loading...', value: 1, color: isDark ? 'rgba(60, 60, 60, 0.5)' : 'rgba(180, 180, 180, 0.5)' },
+//         { id: 'Loading...', value: 1, color: isDark ? 'rgba(70, 70, 70, 0.5)' : 'rgba(160, 160, 160, 0.5)' },
+//     ], [isDark]);
+
+//     const chartTheme = useMemo(() => ({
+//         textColor: isDark ? '#e5e5e5' : '#3d3a3aff',
+//         fontSize: 12,
+//         labels: {
+//             text: {
+//                 fill: isDark ? '#ffffff' : '#000000',
+//             },
+//         },
+//         tooltip: {
+//             container: {
+//                 background: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+//                 color: isDark ? '#ffffff' : '#000000',
+//                 fontSize: 12,
+//             },
+//         },
+//         legends: {
+//             text: {
+//                 fill: isDark ? '#ffffff' : '#000000',
+//             },
+//         },
+//         axis: {
+//             ticks: {
+//                 text: {
+//                     fill: isDark ? '#e5e5e5' : '#333333',
+//                 },
+//             },
+//             legend: {
+//                 text: {
+//                     fill: isDark ? '#e5e5e5' : '#333333',
+//                 },
+//             },
+//         },
+//         grid: {
+//             line: {
+//                 stroke: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+//             },
+//         },
+//     }), [isDark]);
+
+//     const toggleSortOrder = () => {
+//         setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+//     };
+
+//     const toggleViewMode = () => {
+//         setViewMode(prev => prev === 'bar' ? 'pie' : 'bar');
+//     };
+
+//     const handleChartClick = (datum) => {
+//         if (!loading && sectors.length > 0) {
+//             const clickedIndex = sectors.findIndex(s => s.Sector === (datum.id || datum.indexValue));
+//             if (clickedIndex >= 0) {
+//                 setSelectedSector(sectors[clickedIndex]);
+//                 setHighlightedSector(clickedIndex);
+//             }
+//         }
+//     };
+
+//     const CustomTooltip = ({ datum, isPie = true }) => {
+//         const id = isPie ? datum.id : datum.indexValue;
+//         const value = isPie ? datum.value : datum.value;
+//         const percentage = totalMarketCap > 0 ? ((value / totalMarketCap) * 100).toFixed(1) : 0;
+//         return (
+//             <div
+//                 style={{
+//                     background: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+//                     padding: '5px 10px',
+//                     borderRadius: '4px',
+//                     color: isDark ? '#ffffff' : '#000000',
+//                 }}
+//             >
+//                 <strong>{id}</strong>: {formatNumber(value)} ({percentage}%)
+//             </div>
+//         );
+//     };
+
+//     const CustomArcLinkLabel = ({ x, y, dx, dy, rotation, label, textAnchor, textColor, linkColor }) => {
+//         const lines = label.includes('&') ? label.split(' & ') : [label];
+//         return (
+//             <g transform={`translate(${x}, ${y}) rotate(${rotation})`}>
+//                 <line
+//                     x1={0}
+//                     x2={dx}
+//                     y1={0}
+//                     y2={dy}
+//                     stroke={linkColor}
+//                     strokeWidth={1}
+//                     fill="none"
+//                 />
+//                 <text
+//                     dy=".35em"
+//                     dx={textAnchor === 'end' ? -8 : 8}
+//                     textAnchor={textAnchor}
+//                     style={{ fill: textColor, fontSize: 12 }}
+//                 >
+//                     {lines.map((line, i) => (
+//                         <tspan key={i} x={0} dy={i > 0 ? '1.2em' : 0}>
+//                             {line}
+//                         </tspan>
+//                     ))}
+//                 </text>
+//             </g>
+//         );
+//     };
+
+//     return (
+//         <div className="relative px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-[70vh] sm:min-h-[75vh] md:min-h-[80vh]">
+//             <div ref={ref} className="max-w-7xl w-full mx-auto flex flex-col lg:flex-row items-start justify-between gap-6 sm:gap-8 z-10">
+//                 {/* Left Section: Title and Selected Sector Card */}
+//                 <div className="w-full lg:w-1/2 text-gray-800 dark:text-gray-100 text-center lg:text-left">
+//                     <motion.div
+//                         initial={{ opacity: 0, y: 20 }}
+//                         animate={isInView ? { opacity: 1, y: 0 } : {}}
+//                         transition={{ duration: 0.5 }}
+//                     >
+//                         <div className="flex items-center justify-center lg:justify-start text-slate-700 dark:text-indigo-300 text-sm sm:text-base font-medium">
+//                             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+//                             <span>Sector Intelligence Platform</span>
+//                         </div>
+//                         <h1 className="mt-2 sm:mt-4 text-3xl sm:text-4xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-center lg:text-left">
+//                             Capital Market{" "}
+//                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-300">
+//                                 Data Analytics
+//                             </span>
+//                             <span className="z-10 align-right inline-block -rotate-6 bg-white text-sky-600 dark:bg-slate-800 font-semibold text-xs sm:text-sm px-2 py-1 rounded-md border border-sky-300 dark:border-sky-600 shadow-sm">
+//                                 BETA
+//                             </span>
+//                         </h1>
+
+//                         <p className="mt-4 sm:mt-5 text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-md mx-auto lg:mx-0 text-center lg:text-left min-h-[80px] sm:min-h-[100px]">
+//                             <Typewriter
+//                                 words={[
+//                                     'Warren Buffett - "Best Chance to deploy capital are when things are down"',
+//                                     'Vijay Kedia  - "Only two people can BUY at BOTTOM and SELL at TOP one is GOD and other is a LIAR."',
+//                                     'Ray Dalio - "If you are not aggressive you will not make money; if you are not defensive you will not keep money."',
+//                                     'Rakesh Jhunjhunwala - "Trading is for creating capital and investment is for growth of capital."',
+//                                     'Ray Dalio - " There are two main drivers of asset class returns - inflation and growth."',
+//                                 ]}
+//                                 loop={0}
+//                                 cursor
+//                                 cursorStyle="|"
+//                                 typeSpeed={60}
+//                                 deleteSpeed={30}
+//                                 delaySpeed={1500}
+//                             />
+//                         </p>
+
+//                         <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
+//                             <button
+//                                 onClick={toggleSortOrder}
+//                                 disabled={loading}
+//                                 className="flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 bg-sky-600 text-white rounded-lg text-sm sm:text-base font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-sky-700"
+//                                 aria-label={`Sort by Market Cap: ${sortOrder === 'desc' ? 'High to Low' : 'Low to High'}`}
+//                             >
+//                                 {sortOrder === 'desc' ? <ArrowDown size={16} /> : <ArrowUp size={16} />}
+//                                 Sort: {sortOrder === 'desc' ? 'High to Low' : 'Low to High'}
+//                             </button>
+
+//                             <button
+//                                 onClick={toggleViewMode}
+//                                 disabled={loading}
+//                                 className="flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 bg-indigo-600 text-white rounded-lg text-sm sm:text-base font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-indigo-700"
+//                                 aria-label={`Switch to ${viewMode === 'bar' ? 'Pie' : 'Bar'} Chart view`}
+//                             >
+//                                 {viewMode === 'bar' ? <BarChart2 size={16} /> : <PieChart size={16} />}
+//                                 Switch to {viewMode === 'bar' ? 'Pie Chart' : 'Bar Chart'}
+//                             </button>
+//                         </div>
+//                     </motion.div>
+
+//                     <AnimatePresence mode="wait">
+//                         {loading ? (
+//                             <motion.div
+//                                 key="loading"
+//                                 className=" sm:mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden w-full max-w-sm sm:max-w-md mx-auto p-4 sm:p-5"
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 exit={{ opacity: 0, y: -20 }}
+//                                 transition={{ duration: 0.3 }}
+//                             >
+//                                 <div className="animate-pulse flex flex-col items-center space-y-3 sm:space-y-4">
+//                                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+//                                     <div className="w-3/4 h-4 sm:h-5 bg-gray-200 dark:bg-gray-700 rounded"></div>
+//                                     <div className="w-1/2 h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+//                                     <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full">
+//                                         {[...Array(4)].map((_, i) => (
+//                                             <div key={i} className="bg-gray-100 dark:bg-gray-700 p-2 sm:p-3 rounded-lg flex flex-col space-y-1">
+//                                                 <div className="w-1/2 h-2 sm:h-3 bg-gray-200 dark:bg-gray-600 rounded"></div>
+//                                                 <div className="w-3/4 h-3 sm:h-4 bg-gray-200 dark:bg-gray-600 rounded"></div>
+//                                             </div>
+//                                         ))}
+//                                     </div>
+//                                 </div>
+//                             </motion.div>
+//                         ) : !selectedSector || sectors.length === 0 ? (
+//                             <motion.div
+//                                 key="no-data"
+//                                 className="mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden w-full max-w-sm sm:max-w-md mx-auto p-4 sm:p-5 text-center"
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 exit={{ opacity: 0, y: -20 }}
+//                                 transition={{ duration: 0.3 }}
+//                             >
+//                                 <p className="text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">
+//                                     No sector data available
+//                                 </p>
+//                                 <button
+//                                     onClick={() => window.location.reload()}
+//                                     className="mt-3 px-4 sm:px-5 py-2 sm:py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-md text-sm sm:text-base transition-colors duration-200"
+//                                 >
+//                                     Retry
+//                                 </button>
+//                             </motion.div>
+//                         ) : (
+//                             <motion.div
+//                                 key="data"
+//                                 className="mt-3 sm:mt-8 flex flex-col gap-5 w-full max-w-sm sm:max-w-md mx-auto lg:mx-0"
+//                                 initial={{ opacity: 0, y: 20 }}
+//                                 animate={{ opacity: 1, y: 0 }}
+//                                 exit={{ opacity: 0, y: -20 }}
+//                                 transition={{ duration: 0.3 }}
+//                             >
+//                                 <motion.div
+//                                     className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden w-full p-4 sm:p-5"
+//                                     initial={{ opacity: 0 }}
+//                                     animate={{ opacity: 1 }}
+//                                     transition={{ delay: 0.1, duration: 0.3 }}
+//                                 >
+//                                     <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-5">
+//                                         <motion.div
+//                                             className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg flex items-center justify-center shadow-md"
+//                                             style={{
+//                                                 backgroundColor: selectedSector.highlightColor || selectedSector.color || '#3b82f6',
+//                                                 color: 'white',
+//                                             }}
+//                                             whileHover={{ scale: 1.1 }}
+//                                             whileTap={{ scale: 0.95 }}
+//                                             transition={{ type: "spring", stiffness: 300, damping: 10 }}
+//                                         >
+//                                             {sectorIcons[selectedSector.Sector] ? (
+//                                                 React.createElement(sectorIcons[selectedSector.Sector], {
+//                                                     className: "w-5 sm:w-6 h-5 sm:h-6",
+//                                                     strokeWidth: 1.5,
+//                                                 })
+//                                             ) : (
+//                                                 <PieChart className="w-5 sm:w-6 h-5 sm:h-6" strokeWidth={1.5} />
+//                                             )}
+//                                         </motion.div>
+//                                         <div>
+//                                             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
+//                                                 {selectedSector.Sector}
+//                                             </h3>
+//                                             <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+//                                                 {selectedSector.description || 'Sector performance overview'}
+//                                             </p>
+//                                         </div>
+//                                     </div>
+//                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+//                                         <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-800 p-3 rounded-lg border border-blue-100 dark:border-gray-600">
+//                                             <div className="flex items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-400 text-sm sm:text-base font-medium mb-2">
+//                                                 <PieChart className="w-4 sm:w-5 h-4 sm:h-5 opacity-70" />
+//                                                 Market Cap
+//                                             </div>
+//                                             <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100">
+//                                                 {formatNumber(selectedSector.SectorMarketCap)}
+//                                             </p>
+//                                         </div>
+//                                         <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-800 p-3 rounded-lg border border-green-100 dark:border-gray-600">
+//                                             <div className="flex items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-400 text-sm sm:text-base font-medium mb-2">
+//                                                 <TrendingUp className="w-4 sm:w-5 h-4 sm:h-5 opacity-70" />
+//                                                 1Y Growth
+//                                             </div>
+//                                             <p
+//                                                 className={`text-base sm:text-lg font-medium ${selectedSector.SectorCAGR_1Y_MCap >= 0
+//                                                     ? 'text-green-600 dark:text-green-400'
+//                                                     : 'text-red-600 dark:text-red-400'
+//                                                     }`}
+//                                             >
+//                                                 {selectedSector.SectorCAGR_1Y_MCap
+//                                                     ? `${formatDecimal(selectedSector.SectorCAGR_1Y_MCap * 100)}%`
+//                                                     : 'N/A'}
+//                                             </p>
+//                                         </div>
+//                                         <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-gray-700 dark:to-gray-800 p-3 rounded-lg border border-purple-100 dark:border-gray-600">
+//                                             <div className="flex items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-400 text-sm sm:text-base font-medium mb-2">
+//                                                 <BarChart2 className="w-4 sm:w-5 h-4 sm:h-5 opacity-70" />
+//                                                 PE Ratio
+//                                             </div>
+//                                             <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100">
+//                                                 {formatDecimal(selectedSector.SectorPE_Mode || 'N/A')}
+//                                             </p>
+//                                         </div>
+//                                     </div>
+//                                 </motion.div>
+//                             </motion.div>
+//                         )}
+//                     </AnimatePresence>
+//                 </div>
+
+//                 {/* Right Section: Chart */}
+//                 <div className="w-full lg:w-1/2 mt-6 sm:mt-8 lg:mt-0 relative">
+//                     {error ? (
+//                         <div className="text-center px-4 py-3 sm:py-4 text-gray-500 dark:bg-gray-800 dark:text-gray-300 text-sm sm:text-base">
+//                             Could not load sector visualization: {error}
+//                         </div>
+//                     ) : (
+//                         <div className="mt-20 w-full text-black dark:text-white h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[70vh] max-h-[800px] min-h-[300px] relative">
+//                             {viewMode === 'bar' ? (
+//                                 <ResponsiveBar
+//                                     data={loading ? loaderChartData : chartData}
+//                                     keys={['value']}
+//                                     indexBy="id"
+//                                     layout="horizontal"
+//                                     margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
+//                                     padding={0.3}
+//                                     valueScale={{ type: 'linear' }}
+//                                     indexScale={{ type: 'band', round: true }}
+//                                     colors={{ datum: 'data.color' }}
+//                                     borderWidth={1}
+//                                     borderRadius={3}
+//                                     enableGridX={true}
+//                                     enableGridY={false}
+//                                     axisTop={null}
+//                                     axisRight={null}
+//                                     axisBottom={{
+//                                         format: (v) => formatNumber(v),
+//                                         tickSize: 5,
+//                                         tickPadding: 5,
+//                                         tickRotation: -45,
+//                                         legend: '',
+//                                         legendPosition: 'middle',
+//                                         legendOffset: 32,
+//                                     }}
+//                                     axisLeft={{
+//                                         tickSize: 5,
+//                                         tickPadding: 5,
+//                                         tickRotation: 0,
+//                                         legend: '',
+//                                         legendPosition: 'middle',
+//                                         legendOffset: -40,
+//                                     }}
+//                                     labelSkipWidth={12}
+//                                     labelSkipHeight={12}
+//                                     labelTextColor={{
+//                                         from: 'color',
+//                                         modifiers: [['darker', 1.6]],
+//                                     }}
+//                                     animate={true}
+//                                     motionStiffness={90}
+//                                     motionDamping={15}
+//                                     theme={chartTheme}
+//                                     tooltip={({ indexValue, value }) => <CustomTooltip datum={{ id: indexValue, value }} isPie={false} />}
+//                                     onClick={handleChartClick}
+//                                     className="text-black dark:text-white"
+//                                 />
+//                             ) : (
+//                                 // <ResponsivePie
+//                                 //     data={loading ? loaderChartData : chartData}
+//                                 //     key={isDark ? 'dark' : 'light'}
+//                                 //     margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
+//                                 //     innerRadius={0.5}
+//                                 //     padAngle={0.7}
+//                                 //     cornerRadius={3}
+//                                 //     colors={{ datum: 'data.color' }}
+//                                 //     borderWidth={1}
+//                                 //     enableArcLinkLabels={true}
+//                                 //     arcLinkLabelsSkipAngle={12}
+//                                 //     arcLinkLabelsTextColor={isDark ? '#000000' : '#ffffff'}
+//                                 //     arcLinkLabelsThickness={2}
+//                                 //     arcLinkLabelsDiagonalLength={16}
+//                                 //     arcLinkLabelsStraightLength={24}
+//                                 //     arcLinkLabelsColor={{ from: 'color' }}
+//                                 //     arcLinkLabelsComponent={CustomArcLinkLabel}
+//                                 //     enableArcLabels={false}
+//                                 //     animate={true}
+//                                 //     motionStiffness={90}
+//                                 //     motionDamping={15}
+//                                 //     tooltip={({ datum }) => <CustomTooltip datum={datum} isPie={true} />}
+//                                 //     theme={chartTheme}
+//                                 //     onClick={handleChartClick}
+//                                 //     className="text-black dark:text-white"
+//                                 // />
+//                                 <ResponsivePie
+//                                     data={loading ? loaderChartData : chartData}
+//                                     key={isDark ? 'dark' : 'light'}
+//                                     margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
+//                                     innerRadius={0.5}
+//                                     padAngle={0.7}
+//                                     cornerRadius={3}
+//                                     colors={{ datum: 'data.color' }}
+//                                     borderWidth={1}
+//                                     enableArcLinkLabels={true}
+//                                     arcLinkLabelsSkipAngle={12}
+//                                     arcLinkLabelsTextColor={isDark ? '#ffffff' : '#333333'} // Corrected: White in dark mode, dark gray in light mode
+//                                     arcLinkLabelsThickness={2}
+//                                     arcLinkLabelsDiagonalLength={16}
+//                                     arcLinkLabelsStraightLength={24}
+//                                     arcLinkLabelsColor={{ from: 'color' }}
+//                                     arcLinkLabelsComponent={CustomArcLinkLabel}
+//                                     enableArcLabels={false}
+//                                     animate={true}
+//                                     motionStiffness={90}
+//                                     motionDamping={15}
+//                                     tooltip={({ datum }) => <CustomTooltip datum={datum} isPie={true} />}
+//                                     theme={chartTheme}
+//                                     onClick={handleChartClick}
+//                                 />
+//                             )}
+//                         </div>
+//                     )}
+//                     <div className="text-center mt-3 sm:mt-4 text-sm sm:text-base text-gray-600 dark:text-gray-300">
+//                         <p className="text-sky-600 dark:text-sky-300 font-medium">
+//                             Showing top 10 sectors by Market Cap ({sortOrder === 'desc' ? 'highest to lowest' : 'lowest to highest'})
+//                         </p>
+//                         <p className="text-gray-500 dark:text-gray-400 mt-1">
+//                             Total Market Cap: {formatNumber(totalMarketCap)}
+//                         </p>
+//                     </div>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default MarketCapBanner;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import {
@@ -703,20 +2055,8 @@ import {
 } from 'lucide-react';
 import { Typewriter } from 'react-simple-typewriter';
 import axios from 'axios';
-import { Bar } from 'react-chartjs-2';
-import {
-    Chart as ChartJS,
-    ArcElement,
-    Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title
-} from 'chart.js';
 import { ResponsivePie } from '@nivo/pie';
-
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+import { ResponsiveBar } from '@nivo/bar';
 
 const MarketCapBanner = () => {
     const API_BASE = import.meta.env.VITE_URL || `${window.location.origin}/api`;
@@ -731,7 +2071,7 @@ const MarketCapBanner = () => {
     const [maxPELessThan10Sector, setMaxPELessThan10Sector] = useState(null);
     const [minPELessThan10Sector, setMinPELessThan10Sector] = useState(null);
     const [isDark, setIsDark] = useState(
-        localStorage.getItem('theme') === 'dark'
+        localStorage.getItem('theme') === 'dark' || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
     );
     const [viewMode, setViewMode] = useState('bar');
 
@@ -770,31 +2110,29 @@ const MarketCapBanner = () => {
         return Math.round(num * 100) / 100;
     };
 
-    // useEffect(() => {
-    //   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    //   setIsDark(mediaQuery.matches);
-    //   const handleChange = (e) => setIsDark(e.matches);
-    //   mediaQuery.addEventListener('change', handleChange);
-    //   return () => mediaQuery.removeEventListener('change', handleChange);
-    // }, []);
-
-
     useEffect(() => {
         const handleThemeChange = () => {
-            const currentTheme = localStorage.getItem('theme');
-            setIsDark(currentTheme === 'dark');
+            const storedTheme = localStorage.getItem('theme');
+            const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            setIsDark(storedTheme === 'dark' || (storedTheme !== 'light' && systemDark));
         };
 
-        // Run once on mount
+        // Initial check
         handleThemeChange();
 
-        // Listen for storage changes (cross-tab + Navbar updates)
+        // Listen for storage changes (from toggle button)
         window.addEventListener('storage', handleThemeChange);
+
+        // Listen for system preference changes
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        mediaQuery.addEventListener('change', handleThemeChange);
 
         return () => {
             window.removeEventListener('storage', handleThemeChange);
+            mediaQuery.removeEventListener('change', handleThemeChange);
         };
     }, []);
+
     useEffect(() => {
         const controller = new AbortController();
         const cacheDuration = 60 * 60 * 1000;
@@ -826,7 +2164,6 @@ const MarketCapBanner = () => {
                             };
                         });
                 } else {
-                    // const response = await axios.get(`${API_BASE}/equity_sectoral_analysis`, { signal: controller.signal });
                     const response = await axios.get(`${API_BASE}/landpage/sector-summary`, { signal: controller.signal });
                     if (response.data.status !== 'success' || !Array.isArray(response.data.data)) {
                         throw new Error(response.data.message || 'API response is not valid');
@@ -928,7 +2265,7 @@ const MarketCapBanner = () => {
         return sectors.reduce((sum, sector) => sum + (sector.SectorMarketCap || 0), 0);
     }, [sectors]);
 
-    const pieChartData = useMemo(() => {
+    const chartData = useMemo(() => {
         if (!Array.isArray(sectors) || sectors.length === 0) {
             return [
                 { id: 'No Data', value: 1, color: isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(200, 200, 200, 0.5)' },
@@ -941,119 +2278,50 @@ const MarketCapBanner = () => {
         }));
     }, [sectors, highlightedSector, isDark]);
 
-    const barChartData = useMemo(() => {
-        if (!Array.isArray(sectors) || sectors.length === 0) {
-            return {
-                labels: ['No Data'],
-                datasets: [{
-                    label: 'Market Cap',
-                    data: [1],
-                    backgroundColor: isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(200, 200, 200, 0.5)',
-                    borderWidth: 0,
-                    borderRadius: 4,
-                }],
-            };
-        }
-
-        const sortedSectors = [...sectors].sort((a, b) => b.SectorMarketCap - a.SectorMarketCap);
-
-        return {
-            labels: sortedSectors.map(sector => sector.Sector || 'Unknown'),
-            datasets: [{
-                label: 'Market Cap',
-                data: sortedSectors.map(sector => sector.SectorMarketCap || 0),
-                backgroundColor: sortedSectors.map((sector, index) => highlightedSector === index ? sector.highlightColor : sector.color),
-                borderWidth: 0,
-                borderRadius: 4,
-                barPercentage: 0.6,
-            }],
-        };
-    }, [sectors, highlightedSector, isDark]);
-
-    const loaderPieChartData = useMemo(() => [
+    const loaderChartData = useMemo(() => [
         { id: 'Loading...', value: 1, color: isDark ? 'rgba(50, 50, 50, 0.5)' : 'rgba(200, 200, 200, 0.5)' },
         { id: 'Loading...', value: 1, color: isDark ? 'rgba(60, 60, 60, 0.5)' : 'rgba(180, 180, 180, 0.5)' },
         { id: 'Loading...', value: 1, color: isDark ? 'rgba(70, 70, 70, 0.5)' : 'rgba(160, 160, 160, 0.5)' },
     ], [isDark]);
 
-    const loaderBarChartData = useMemo(() => ({
-        labels: ['Loading...', 'Loading...', 'Loading...'],
-        datasets: [{
-            label: 'Market Cap',
-            data: [1, 1, 1],
-            backgroundColor: isDark
-                ? ['rgba(50, 50, 50, 0.5)', 'rgba(60, 60, 60, 0.5)', 'rgba(70, 70, 70, 0.5)']
-                : ['rgba(200, 200, 200, 0.5)', 'rgba(180, 180, 180, 0.5)', 'rgba(160, 160, 160, 0.5)'],
-            borderWidth: 0,
-            borderRadius: 4,
-            barPercentage: 0.6,
-        }],
-    }), [isDark]);
-
-    const barChartOptions = useMemo(() => ({
-        responsive: true,
-        maintainAspectRatio: false,
-        indexAxis: 'y',
-        plugins: {
+    const chartTheme = useMemo(() => ({
+        textColor: isDark ? '#e5e5e5' : '#3d3a3aff',
+        fontSize: 12,
+        labels: {
+            text: {
+                fill: isDark ? '#ffffff' : '#000000',
+            },
+        },
+        tooltip: {
+            container: {
+                background: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+                color: isDark ? '#ffffff' : '#000000',
+                fontSize: 12,
+            },
+        },
+        legends: {
+            text: {
+                fill: isDark ? '#ffffff' : '#000000',
+            },
+        },
+        axis: {
+            ticks: {
+                text: {
+                    fill: isDark ? '#e5e5e5' : '#333333',
+                },
+            },
             legend: {
-                display: false,
-            },
-            tooltip: {
-                enabled: Array.isArray(sectors) && sectors.length > 0,
-                backgroundColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-                titleColor: isDark ? '#ffffff' : '#000000',
-                bodyColor: isDark ? '#dddddd' : '#333333',
-                callbacks: {
-                    label: function (context) {
-                        const label = context.dataset.label || '';
-                        const value = context.raw || 0;
-                        const percentage = totalMarketCap > 0 ? ((value / totalMarketCap) * 100).toFixed(1) : 0;
-                        return `${label}: ${formatNumber(value)} (${percentage}%)`;
-                    },
+                text: {
+                    fill: isDark ? '#e5e5e5' : '#333333',
                 },
             },
         },
-        scales: {
-            x: {
-                grid: {
-                    color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                },
-                ticks: {
-                    color: isDark ? '#e5e5e5' : '#333',
-                    callback: function (value) {
-                        if (value >= 1e7) {
-                            return '₹' + (value / 1e7).toFixed(1) + ' Cr';
-                        }
-                        if (value >= 1e5) {
-                            return '₹' + (value / 1e5).toFixed(1) + ' L';
-                        }
-                        return '₹' + value;
-                    },
-                },
-            },
-            y: {
-                grid: {
-                    color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                },
-                ticks: {
-                    color: isDark ? '#e5e5e5' : '#333',
-                },
+        grid: {
+            line: {
+                stroke: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
             },
         },
-        animation: {
-            duration: 1000,
-            easing: 'easeOutQuart',
-        },
-        onClick: (event, elements) => {
-            if (!loading && elements?.length > 0 && Array.isArray(sectors) && sectors.length > 0) {
-                const clickedIndex = elements[0].index;
-                if (clickedIndex < sectors.length) {
-                    setSelectedSector(sectors[clickedIndex]);
-                    setHighlightedSector(clickedIndex);
-                }
-            }
-        },
-    }), [formatNumber, isDark, loading, sectors, totalMarketCap]);
+    }), [isDark]);
 
     const toggleSortOrder = () => {
         setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
@@ -1061,6 +2329,63 @@ const MarketCapBanner = () => {
 
     const toggleViewMode = () => {
         setViewMode(prev => prev === 'bar' ? 'pie' : 'bar');
+    };
+
+    const handleChartClick = (datum) => {
+        if (!loading && sectors.length > 0) {
+            const clickedIndex = sectors.findIndex(s => s.Sector === (datum.id || datum.indexValue));
+            if (clickedIndex >= 0) {
+                setSelectedSector(sectors[clickedIndex]);
+                setHighlightedSector(clickedIndex);
+            }
+        }
+    };
+
+    const CustomTooltip = ({ datum, isPie = true }) => {
+        const id = isPie ? datum.id : datum.value;
+        const value = isPie ? datum.value : datum.value;
+        const percentage = totalMarketCap > 0 ? ((value / totalMarketCap) * 100).toFixed(1) : 0;
+        return (
+            <div
+                style={{
+                    background: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+                    padding: '5px 10px',
+                    borderRadius: '4px',
+                    color: isDark ? '#ffffff' : '#000000',
+                }}
+            >
+                <strong>{id}</strong>: {formatNumber(value)} ({percentage}%)
+            </div>
+        );
+    };
+
+    const CustomArcLinkLabel = ({ x, y, dx, dy, rotation, label, textAnchor, textColor, linkColor }) => {
+        const lines = label.includes('&') ? label.split(' & ') : [label];
+        return (
+            <g transform={`translate(\${x}, \${y}) rotate(\${rotation})`}>
+                <line
+                    x1={0}
+                    x2={dx}
+                    y1={0}
+                    y2={dy}
+                    stroke={linkColor}
+                    strokeWidth={1}
+                    fill="none"
+                />
+                <text
+                    dy=".35em"
+                    dx={textAnchor === 'end' ? -8 : 8}
+                    textAnchor={textAnchor}
+                    style={{ fill: textColor, fontSize: 12 }}
+                >
+                    {lines.map((line, i) => (
+                        <tspan key={i} x={0} dy={i > 0 ? '1.2em' : 0}>
+                            {line}
+                        </tspan>
+                    ))}
+                </text>
+            </g>
+        );
     };
 
     return (
@@ -1264,73 +2589,132 @@ const MarketCapBanner = () => {
                             Could not load sector visualization: {error}
                         </div>
                     ) : (
-                        <div className="mt-20 w-full h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[70vh] max-h-[800px] min-h-[300px] relative">
+                        <div className="mt-20 w-full h-[40vh] sm:h-[45vh] md:h-[50vh] lg:h-[70vh]  min-h-[300px] relative">
                             {viewMode === 'bar' ? (
+                                // <ResponsiveBar
+                                //     data={loading ? loaderChartData : chartData}
+                                //     keys={['value']}
+                                //     indexBy="id"
+                                //     layout="horizontal"
+                                //     margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
+                                //     padding={0.3}
+                                //     valueScale={{ type: 'linear' }}
+                                //     indexScale={{ type: 'band', round: true }}
+                                //     colors={{ datum: 'data.color' }}
+                                //     borderWidth={1}
+                                //     borderRadius={3}
+                                //     enableGridX={true}
+                                //     enableGridY={false}
+                                //     axisTop={null}
+                                //     axisRight={null}
+                                //     axisBottom={{
+                                //         format: (v) => formatNumber(v),
+                                //         tickSize: 5,
+                                //         tickPadding: 5,
+                                //         tickRotation: -45,
+                                //         legend: '',
+                                //         legendPosition: 'middle',
+                                //         legendOffset: 32,
+                                //     }}
+                                //     axisLeft={{
+                                //         tickSize: 5,
+                                //         tickPadding: 5,
+                                //         tickRotation: 0,
+                                //         legend: '',
+                                //         legendPosition: 'middle',
+                                //         legendOffset: -40,
+                                //     }}
+                                //     labelSkipWidth={12}
+                                //     labelSkipHeight={12}
+                                //     labelTextColor={{
+                                //         from: 'color',
+                                //         modifiers: [['darker', 1.6]],
+                                //     }}
+                                //     animate={true}
+                                //     motionStiffness={90}
+                                //     motionDamping={15}
+                                //     theme={chartTheme}
+                                //     tooltip={({ indexValue, value }) => <CustomTooltip datum={{ id: indexValue, value }} isPie={false} />}
+                                //     onClick={handleChartClick}
+                                // />
+                                <ResponsiveBar
+                                    data={loading ? loaderChartData : chartData}
+                                    keys={['value']}
+                                    indexBy="id" // Re-added indexBy for proper data mapping
+                                    layout="horizontal"
+                                    margin={{ top: 50, right: 90, bottom: 100, left: 120 }} // Increased margins for better spacing
+                                    padding={0.4} // Slightly increased padding for better bar separation
+                                    valueScale={{ type: 'linear', min: 0, nice: true }} // Ensure scale starts at 0 and is nicely rounded
+                                    indexScale={{ type: 'band', round: true, padding: 0.2 }} // Added padding for better sector spacing
+                                    colors={{ datum: 'data.color' }}
+                                    borderWidth={2} // Slightly thicker borders for definition
+                                    borderRadius={4} // Increased border radius for a softer look
+                                    enableGridX={true}
+                                    enableGridY={false}
+                                    gridXValues={5} // Limit grid lines for cleaner look
+                                    axisTop={null}
+                                    axisRight={null}
+                                    axisBottom={{
+                                        format: (v) => formatNumber(v),
+                                        tickSize: 6,
+                                        tickPadding: 10,
+                                        tickRotation: -45,
+                                        legend: 'Market Cap',
+                                        legendPosition: 'middle',
+                                        legendOffset: 50,
+                                        tickTextColor: isDark ? '#e0e0e0' : '#333333', // Lighter gray in dark mode for contrast
+                                        legendTextColor: isDark ? '#e0e0e0' : '#333333', // Consistent legend color
+                                    }}
+                                    axisLeft={{
+                                        tickSize: 6,
+                                        tickPadding: 10,
+                                        tickRotation: 0,
+                                        legend: 'Sectors',
+                                        legendPosition: 'middle',
+                                        legendOffset: -70,
+                                        tickTextColor: isDark ? '#e0e0e0' : '#333333', // Lighter gray in dark mode
+                                        legendTextColor: isDark ? '#e0e0e0' : '#333333', // Consistent legend color
+                                    }}
+                                    labelSkipWidth={15}
+                                    labelSkipHeight={15}
+                                    labelTextColor={{
+                                        from: 'color',
+                                        modifiers: [['darker', 2.5]], // Further increased contrast
+                                    }}
+                                    label={(d) => formatNumber(d.value)} // Display formatted value on bars
+                                    enableLabel={true} // Enable labels on bars
+                                    animate={true}
+                                    motionStiffness={90}
+                                    motionDamping={15}
+                                    theme={chartTheme}
+                                    tooltip={({ datum }) => <CustomTooltip datum={datum} isPie={false} />}
+                                    onClick={handleChartClick}
+                                />
+                            ) : (
                                 <ResponsivePie
-                                    data={loading ? loaderPieChartData : pieChartData}
-                                    key={isDark ? 'dark' : 'light'} // ✅ re-render on theme switch
+                                    data={loading ? loaderChartData : chartData}
+                                    key={isDark ? 'dark' : 'light'}
                                     margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
                                     innerRadius={0.5}
                                     padAngle={0.7}
                                     cornerRadius={3}
                                     colors={{ datum: 'data.color' }}
                                     borderWidth={1}
-                                    borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-                                    enableRadialLabels={true}
-                                    radialLabelsSkipAngle={10}
-                                    radialLabelsTextColor={isDark ? '#2d7723ff' : '#333333'}
-                                    radialLabelsLinkColor={{ from: 'color' }}
-                                    enableSliceLabels={true}
-                                    sliceLabelsSkipAngle={10}
-                                    sliceLabelsTextColor={isDark ? '#0b6831ff' : '#333333'}
-                                    sliceLabel={(datum) => `${((datum.value / totalMarketCap) * 100).toFixed(1)}%`}
+                                    enableArcLinkLabels={true}
+                                    arcLinkLabelsSkipAngle={12}
+                                    arcLinkLabelsTextColor={isDark ? '#ffffff' : '#686565ff'} // Corrected for visibility
+                                    arcLinkLabelsThickness={2}
+                                    arcLinkLabelsDiagonalLength={16}
+                                    arcLinkLabelsStraightLength={24}
+                                    arcLinkLabelsColor={{ from: 'color' }}
+                                    arcLinkLabelsComponent={CustomArcLinkLabel}
+                                    enableArcLabels={false}
                                     animate={true}
                                     motionStiffness={90}
                                     motionDamping={15}
-                                    tooltip={({ datum }) => (
-                                        <div
-                                            style={{
-                                                background: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
-                                                padding: '5px 10px',
-                                                borderRadius: '4px',
-                                                color: isDark ? '#a7a7a770' : '#000000',
-                                            }}
-                                        >
-                                            <strong>{datum.id}</strong>: {formatNumber(datum.value)} (
-                                            {totalMarketCap > 0 ? ((datum.value / totalMarketCap) * 100).toFixed(1) : 0}%)
-                                        </div>
-                                    )}
-                                    theme={{
-                                        textColor: isDark ? '#e5e5e5' : '#333333',
-                                        fontSize: 12,
-                                        tooltip: {
-                                            container: {
-                                                background: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)',
-                                                color: isDark ? '#ffffff' : '#000000',
-                                                fontSize: 12,
-                                            },
-                                        },
-                                        legends: {
-                                            text: {
-                                                fill: isDark ? '#2f62a5ff' : '#333333',
-                                            },
-                                        },
-                                    }}
-                                    onClick={(datum, event) => {
-                                        if (!loading && sectors.length > 0) {
-                                            const clickedIndex = sectors.findIndex(s => s.Sector === datum.id);
-                                            if (clickedIndex >= 0) {
-                                                setSelectedSector(sectors[clickedIndex]);
-                                                setHighlightedSector(clickedIndex);
-                                            }
-                                        }
-                                    }}
-                                />
-
-                            ) : (
-                                <Bar
-                                    data={loading ? loaderBarChartData : barChartData}
-                                    options={barChartOptions}
+                                    tooltip={({ datum }) => <CustomTooltip datum={datum} isPie={true} />}
+                                    theme={chartTheme}
+                                    onClick={handleChartClick}
                                 />
                             )}
                         </div>

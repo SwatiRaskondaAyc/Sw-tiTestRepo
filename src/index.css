@@ -146,3 +146,31 @@ html {
     color: #000 !important;
   }
 }
+
+
+
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #e5e7eb; /* Light gray for light theme */
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #22D3EE; /* Cyan color to match your theme */
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #06B6D4; /* Slightly darker cyan on hover */
+}
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b; /* Darker track for dark theme */
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #22D3EE; /* Cyan thumb for dark theme */
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #06B6D4;
+}

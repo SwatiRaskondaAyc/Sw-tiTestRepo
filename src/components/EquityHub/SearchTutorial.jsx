@@ -1099,104 +1099,105 @@ const SearchTutorial = () => {
           </div>
 
           {/* Playlist Section */}
-          <div className={`lg:w-80 xl:w-96 transition-all duration-500 ease-in-out ${showPlaylist ? 'block' : 'hidden lg:block'}`}>
-            <div className="rounded-xl p-3 sm:p-4 md:p-6 bg-white/80 dark:bg-slate-800 backdrop-blur-md shadow-md border border-gray-200/50 dark:border-gray-700/50 h-full no-scrollbar">
-              <div className="flex justify-between items-center mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-100 dark:border-gray-700">
-                <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-gray-200 flex items-center">
-                  <List size={18} sm:size={22} className="mr-1 sm:mr-2" />
-                  Tutorial Playlist
-                </h2>
-                <span className="text-xs sm:text-sm bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-200 px-2 sm:px-3 py-1 rounded-full font-medium">
-                  {filteredPlaylist.length} videos
-                </span>
-              </div>
+          {/* Playlist Section */}
+<div className={`lg:w-80 xl:w-96 transition-all duration-500 ease-in-out ${showPlaylist ? 'block' : 'hidden lg:block'}`}>
+  <div className="rounded-xl p-3 sm:p-4 md:p-6 bg-white/80 dark:bg-slate-800 backdrop-blur-md shadow-md border border-gray-200/50 dark:border-gray-700/50 h-full">
+    <div className="flex justify-between items-center mb-4 sm:mb-6 pb-3 sm:pb-4 border-b border-gray-100 dark:border-gray-700">
+      <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 dark:text-gray-200 flex items-center">
+        <List size={18} sm:size={22} className="mr-1 sm:mr-2" />
+        Tutorial Playlist
+      </h2>
+      <span className="text-xs sm:text-sm bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-200 px-2 sm:px-3 py-1 rounded-full font-medium">
+        {filteredPlaylist.length} videos
+      </span>
+    </div>
 
-              <div className="mb-4 sm:mb-6">
-                <input
-                  type="text"
-                  placeholder="Search tutorials..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-xs sm:text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+    <div className="mb-4 sm:mb-6">
+      <input
+        type="text"
+        placeholder="Search tutorials..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="w-full px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-xs sm:text-sm text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+      />
+    </div>
+
+    <ul className="space-y-3 sm:space-y-4 max-h-[70vh] sm:max-h-[70vh] overflow-y-auto">
+      {filteredPlaylist.length > 0 ? (
+        filteredPlaylist.map((video) => (
+          <li
+            key={video.id}
+            className={`rounded-lg cursor-pointer transition-all duration-300 overflow-hidden border ${
+              currentVideo?.id === video.id
+                ? 'bg-gradient-to-r from-cyan-50/50 to-gray-50/50 border-cyan-200 shadow-lg dark:border-cyan-700/50 dark:bg-slate-700/50'
+                : 'bg-white border-gray-200 dark:bg-slate-800 dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-slate-700/50'
+            }`}
+            onClick={() => handleVideoSelect(video)}
+          >
+            <div className="flex p-2 sm:p-3 group">
+              <div className="relative flex-shrink-0 w-20 sm:w-24 h-12 sm:h-14">
+                <img
+                  src={video.thumbnail}
+                  alt={video.title}
+                  className="w-full h-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
                 />
-              </div>
-
-              <ul className="space-y-3 sm:space-y-4 max-h-[70vh] sm:max-h-[70vh] overflow-y-auto no-scrollbar">
-                {filteredPlaylist.length > 0 ? (
-                  filteredPlaylist.map((video) => (
-                    <li
-                      key={video.id}
-                      className={`rounded-lg cursor-pointer transition-all duration-300 overflow-hidden border ${
-                        currentVideo?.id === video.id
-                          ? 'bg-gradient-to-r from-cyan-50/50 to-gray-50/50 border-cyan-200 shadow-lg dark:border-cyan-700/50 dark:bg-slate-700/50'
-                          : 'bg-white border-gray-200 dark:bg-slate-800 dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-slate-700/50'
-                      }`}
-                      onClick={() => handleVideoSelect(video)}
-                    >
-                      <div className="flex p-2 sm:p-3 group">
-                        <div className="relative flex-shrink-0 w-20 sm:w-24 h-12 sm:h-14">
-                          <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            className="w-full h-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
-                          />
-                          {currentVideo?.id === video.id && isPlaying && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                              <div className="flex space-x-1">
-                                <div
-                                  className="w-1 h-4 bg-cyan-400 animate-pulse"
-                                  style={{ animationDelay: '0ms' }}
-                                ></div>
-                                <div
-                                  className="w-1 h-4 bg-cyan-400 animate-pulse"
-                                  style={{ animationDelay: '150ms' }}
-                                ></div>
-                                <div
-                                  className="w-1 h-4 bg-cyan-400 animate-pulse"
-                                  style={{ animationDelay: '300ms' }}
-                                ></div>
-                              </div>
-                            </div>
-                          )}
-                          <div className="absolute bottom-1 right-1 bg-gray-900/80 text-xs text-white px-1 sm:px-1.5 py-0.5 rounded font-medium">
-                            {video.duration}
-                          </div>
-                        </div>
-                        <div className="flex-1 ml-2 sm:ml-4 min-w-0">
-                          <p
-                            className={`font-semibold text-xs sm:text-sm truncate ${
-                              currentVideo?.id === video.id ? 'text-cyan-700 dark:text-white' : 'text-gray-800 dark:text-white'
-                            }`}
-                          >
-                            {video.title}
-                          </p>
-                          <div className="flex items-center mt-1">
-                            <div
-                              className={`text-xs font-medium ${
-                                currentVideo?.id === video.id ? 'text-cyan-600 dark:text-white' : 'text-gray-500 dark:text-white'
-                              }`}
-                            >
-                              Click to play
-                            </div>
-                            {currentVideo?.id === video.id && (
-                              <ChevronRight size={14} sm:size={16} className="text-cyan-500 ml-1 sm:ml-1.5" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  ))
-                ) : (
-                  <div
-                    role="alert"
-                    className="flex justify-center w-full max-w-md mx-auto px-3 sm:px-4 py-2 rounded-md bg-red-50 border border-red-400 text-red-700 shadow-sm text-xs sm:text-sm font-medium text-center"
-                  >
-                    No tutorials found
+                {currentVideo?.id === video.id && isPlaying && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                    <div className="flex space-x-1">
+                      <div
+                        className="w-1 h-4 bg-cyan-400 animate-pulse"
+                        style={{ animationDelay: '0ms' }}
+                      ></div>
+                      <div
+                        className="w-1 h-4 bg-cyan-400 animate-pulse"
+                        style={{ animationDelay: '150ms' }}
+                      ></div>
+                      <div
+                        className="w-1 h-4 bg-cyan-400 animate-pulse"
+                        style={{ animationDelay: '300ms' }}
+                      ></div>
+                    </div>
                   </div>
                 )}
-              </ul>
+                <div className="absolute bottom-1 right-1 bg-gray-900/80 text-xs text-white px-1 sm:px-1.5 py-0.5 rounded font-medium">
+                  {video.duration}
+                </div>
+              </div>
+              <div className="flex-1 ml-2 sm:ml-4 min-w-0">
+                <p
+                  className={`font-semibold text-xs sm:text-sm truncate ${
+                    currentVideo?.id === video.id ? 'text-cyan-700 dark:text-white' : 'text-gray-800 dark:text-white'
+                  }`}
+                >
+                  {video.title}
+                </p>
+                <div className="flex items-center mt-1">
+                  <div
+                    className={`text-xs font-medium ${
+                      currentVideo?.id === video.id ? 'text-cyan-600 dark:text-white' : 'text-gray-500 dark:text-white'
+                    }`}
+                  >
+                    Click to play
+                  </div>
+                  {currentVideo?.id === video.id && (
+                    <ChevronRight size={14} sm:size={16} className="text-cyan-500 ml-1 sm:ml-1.5" />
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          </li>
+        ))
+      ) : (
+        <div
+          role="alert"
+          className="flex justify-center w-full max-w-md mx-auto px-3 sm:px-4 py-2 rounded-md bg-red-50 border border-red-400 text-red-700 shadow-sm text-xs sm:text-sm font-medium text-center"
+        >
+          No tutorials found
+        </div>
+      )}
+    </ul>
+  </div>
+</div>
         </div>
       </div>
     </div>
