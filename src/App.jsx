@@ -502,7 +502,7 @@ import News from './components/News';
 import Support from './components/Support';
 import Plan from './components/Plan';
 import Offer from './components/Offer';
-import Portfolio from './components/Portfolio/Portfolio.jsx';
+// import Portfolio from './components/Portfolio/Portfolio.jsx';
 import FAQ from './components/FAQ';
 import CompleteData from './components/CompleteData';
 import UpdateProfile from './components/UpdateProfile';
@@ -767,7 +767,7 @@ const App = () => {
         <Route path="/support" element={<Support />} />
         <Route path="/plan" element={<Plan />} />
         <Route path="/offer" element={<Offer />} />
-        <Route path="/portfolio" element={<Portfolio />} />
+        {/* <Route path="/portfolio" element={<Portfolio />} /> */}
         <Route path="/faq" element={<FAQ />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/completeData" element={<CompleteData />} />
@@ -779,7 +779,7 @@ const App = () => {
         <Route path="/terms" element={<TermsConditions />} />
         <Route path="/promo" element={<PromoCodeStep />} />
         <Route path="/admin/*" element={<Admin />} />
-       <Route path="/equityhub" element={<EquityHub onSuccess={handleLoginSuccess} />} />
+        <Route path="/equityhub" element={<EquityHub onSuccess={handleLoginSuccess} />} />
         <Route path="/search" element={<Search />} />
         <Route path="/portDash" element={<PortLandPage />} />
         <Route path="/portDash/my-portfolio" element={<MyPortfolioPage />} />
@@ -789,13 +789,13 @@ const App = () => {
         <Route path="/chatPage" element={<ChatPage />} />
         <Route path="/updateIndividualProfile" element={<UpdateIndividualProfile />} />
         <Route path="/updateCorporateProfile/*" element={<UpdateCorporateProfile />} />
-       <Route path="/individualSignUp" element={<IndividualSignUp onSuccess={handleLoginSuccess} />} />
+        <Route path="/individualSignUp" element={<IndividualSignUp onSuccess={handleLoginSuccess} />} />
         <Route path="/corporateSignUp" element={<CorporateSignUp onSuccess={handleLoginSuccess} />} />
         <Route path="/emaillogin" element={<EmailLogin />} />
         <Route path="/reset-password" element={<ResetPasswordHandler />} />
         <Route path="/individualResetPassword" element={<IndividualResetPassword />} />
         <Route path="/corporateResetPassword" element={<CorporateResetPassword />} />
-         <Route path="/researchPanel" element={<Dashboard onSuccess={handleLoginSuccess} />} />
+        <Route path="/researchPanel" element={<Dashboard onSuccess={handleLoginSuccess} />} />
         <Route path="/oauth/redirect" element={<OAuth2RedirectHandler />} />
         <Route path="/addNewModal" element={<AddNewModal />} />
         <Route path="/savedDashboard" element={<SavedDashboard />} />
